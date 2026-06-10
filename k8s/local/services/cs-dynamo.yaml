@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cs-dynamo-db
+  labels:
+    app: cs-dynamo-db
+    project: conexao-solidaria
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: cs-dynamo-db
+  template:
+    metadata:
+      labels:
+        app: cs-dynamo-db
+        project: conexao-solidaria
+    spec:
+      containers:
+        - name: cs-dynamo-db
+          image: amazon/dynamodb-local
+          # Equivalente ao "command" do docker-compose
+          args:
+            - "-jar"
+            - "DynamoDBLocal.jar"
+            - "-sharedDb"
+          ports:
+            - name: dynamodb
+              containerPort: 8000
+
+          # ── Recursos ────────────────────────────────────────────────────
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "250m"
+              memory: "512Mi"
+
+          # ── Liveness Probe ───────────────────────────────────────────────
+          # Verifica se o processo Java do DynamoDB está respondendo na porta
+          livenessProbe:
+            tcpSocket:
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          # ── Readiness Probe ──────────────────────────────────────────────
+          # Confirma que o DynamoDB está pronto para receber requisições
+          readinessProbe:
+            tcpSocket:
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3

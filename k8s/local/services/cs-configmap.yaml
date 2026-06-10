@@ -1,0 +1,49 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cs-configmap
+  labels:
+    name: cs-configmap
+data: 
+  #RabbitMq
+  RABBITMQ_HOST: "/"
+  RABBITMQ_SVC: cs-rabbitmq-amqp-svc
+  RABBITMQ_ENABLED_PLUGINS_FILE: "/etc/rabbitmq/enabled_plugins"
+  enabled_plugins: "[rabbitmq_management,rabbitmq_prometheus]."
+  #RABBITMQ_PAYMENT_PROCESSED_QUEUE: "payment-processed-event-queue"
+  #RABBITMQ_PAYMENT_PROCESSED_NOT_QUEUE: "payment-processed-event-not-queue"
+  #RABBITMQ_USER_CREATED_NOT_QUEUE: "user-created-event-not-queue"
+  #RABBITMQ_ORDER_PLACED_QUEUE: "order-placed-event-queue"
+
+  #Usuarios
+  USUARIOS_DB_SVC: cs-usuarios-db-svc
+  USUARIOS_POSTGRES_DB: "cs-usuarios"
+
+  #Campanhas
+  CAMPANHAS_DB_SVC: cs-campanhas-db-svc
+  CAMPANHAS_POSTGRES_DB: "cs-campanhas"
+
+  #Doacoes
+  DOACOES_DB_SVC: cs-doacoes-db-svc
+  DOACOES_POSTGRES_DB: "cs-doacoes"
+
+  #DynamoDB
+  DYNAMODB_SERVICE_URL: "http://cs-dynamo-db:8000"
+  DYNAMODB_SVC: cs-dynamo-db
+
+  #AWS - Chave Falsa, so para rodar o dynamo local
+  AWS_ACCESS_KEY_ID: "fake-access-key"
+  AWS_SECRET_ACCESS_KEY: "fake-secret-key"
+  AWS_DEFAULT_REGION: "us-east-1"
+
+  #.NetCore
+  ASPNETCORE_ENVIRONMENT: Development
+  ASPNETCORE_URLS: http://+:8080
+
+  #Variables
+  #Type - LOCAL - local kubernetes | LAB = AWS Lab
+  APPLICATION_TYPE: "LOCAL"
+  CUSTOMLOGGING_LOGINFO: "True"
+  CUSTOMLOGGING_LOGWARNING: "True"
+  CUSTOMLOGGING_LOGERROR: "True"
+  CUSTOMLOGGING_SENDLOGTODB: "True"

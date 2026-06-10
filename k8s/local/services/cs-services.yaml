@@ -1,0 +1,209 @@
+# *********************************************************************************************************************** #
+# RABBITMQ                                                                                                                #       
+# *********************************************************************************************************************** #
+apiVersion: v1
+kind: Service
+metadata:
+  name: cs-rabbitmq-amqp-svc
+  labels:
+    app: cs-rabbitmq
+    project: conexao-solidaria
+spec:
+  type: ClusterIP
+  selector:
+    app: cs-rabbitmq
+  ports:
+    - name: amqp
+      port: 5672
+      targetPort: 5672
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cs-rabbitmq-manag-svc
+  labels:
+    app: cs-rabbitmq
+    project: conexao-solidaria
+spec:
+  type: LoadBalancer
+  selector:
+    app: cs-rabbitmq
+  ports:
+    - name: management
+      port: 15672
+      targetPort: 15672
+
+# *********************************************************************************************************************** #
+# USUARIOS-DB                                                                                                             #       
+# *********************************************************************************************************************** #
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cs-usuarios-db-svc
+  labels:
+    app: cs-usuarios-db
+    project: conexao-solidaria
+spec:
+  selector:
+    app: cs-usuarios-db
+  type: ClusterIP
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: 5432
+      protocol: TCP
+
+
+# *********************************************************************************************************************** #
+# CAMPANHAS-DB                                                                                                             #       
+# *********************************************************************************************************************** #
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cs-campanhas-db-svc
+  labels:
+    app: cs-campanhas-db
+    project: conexao-solidaria
+spec:
+  selector:
+    app: cs-campanhas-db
+  type: ClusterIP
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: 5432
+      protocol: TCP
+
+
+# *********************************************************************************************************************** #
+# DOACOES-DB                                                                                                             #       
+# *********************************************************************************************************************** #
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cs-doacoes-db-svc
+  labels:
+    app: cs-doacoes-db
+    project: conexao-solidaria
+spec:
+  selector:
+    app: cs-doacoes-db
+  type: ClusterIP
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: 5432
+      protocol: TCP
+
+
+# *********************************************************************************************************************** #
+# DYNAMODB                                                                                                             #       
+# *********************************************************************************************************************** #
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cs-dynamo-db
+  labels:
+    app: cs-dynamo-db
+    project: conexao-solidaria
+spec:
+  selector:
+    app: cs-dynamo-db
+  type:  LoadBalancer # Modificar apos testar localmente
+  ports:
+    - name: dynamodb
+      port: 8000
+      targetPort: 8000
+      protocol: TCP
+
+
+# *********************************************************************************************************************** #
+# REDIS                                                                                                           #       
+# *********************************************************************************************************************** #
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cs-redis
+  labels:
+    app: cs-redis
+    project: conexao-solidaria
+spec:
+  selector:
+    app: cs-redis
+  type:  LoadBalancer # Modificar apos testar localmente
+  ports:
+    - name: redis
+      port: 6379
+      targetPort: 6379
+      protocol: TCP
+
+
+# *********************************************************************************************************************** #
+# USUARIOS API                                                                                                          #       
+# *********************************************************************************************************************** #
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cs-usuarios-api
+  labels:
+    app: cs-usuarios-api
+    project: conexao-solidaria
+spec:
+  selector:
+    app: cs-usuarios-api
+  type: LoadBalancer # Modificar apos Api Gateway estar pronta
+  ports:
+    - name: http
+      port: 5001
+      targetPort: 8080
+      protocol: TCP
+
+
+# *********************************************************************************************************************** #
+# CAMPANHAS API                                                                                                          #       
+# *********************************************************************************************************************** #
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cs-campanhas-api
+  labels:
+    app: cs-campanhas-api
+    project: conexao-solidaria
+spec:
+  selector:
+    app: cs-campanhas-api
+  type: LoadBalancer # Modificar apos Api Gateway estar pronta
+  ports:
+    - name: http
+      port: 5002
+      targetPort: 8080
+      protocol: TCP
+
+
+# *********************************************************************************************************************** #
+# DOACOES API                                                                                                          #       
+# *********************************************************************************************************************** #
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cs-doacoes-api
+  labels:
+    app: cs-doacoes-api
+    project: conexao-solidaria
+spec:
+  selector:
+    app: cs-doacoes-api
+  type: LoadBalancer # Modificar apos Api Gateway estar pronta
+  ports:
+    - name: http
+      port: 5003
+      targetPort: 8080
+      protocol: TCP

@@ -1,0 +1,118 @@
+# *********************************************************************************************************************** #
+# RABBITMQ                                                                                                                #       
+# *********************************************************************************************************************** #
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: cs-rabbitmq-pv
+  labels:
+    app: rabbitmq
+    project: conexao-solidaria
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: "" # Nome customizado para ignorar a AWS
+  hostPath:
+    path: "/mnt/data"
+
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: cs-rabbitmq-pvc
+  labels:
+    app: rabbitmq
+    project: conexao-solidaria
+spec:
+  storageClassName: ""
+  volumeName: cs-rabbitmq-pv
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Mi
+
+
+# *********************************************************************************************************************** #
+# USUARIOS-DB                                                                                                             #       
+# *********************************************************************************************************************** #
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: cs-usuarios-db-pvc
+  labels:
+    app: cs-usuarios-db-pvc
+    project: conexao-solidaria
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Mi
+  # storageClassName: standard
+
+
+
+# *********************************************************************************************************************** #
+# CAMPANHAS-DB                                                                                                             #       
+# *********************************************************************************************************************** #
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: cs-campanhas-db-pvc
+  labels:
+    app: cs-campanhas-db-pvc
+    project: conexao-solidaria
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Mi
+  # storageClassName: standard
+
+
+# *********************************************************************************************************************** #
+# DOACOES-DB                                                                                                             #       
+# *********************************************************************************************************************** #
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: cs-doacoes-db-pvc
+  labels:
+    app: cs-doacoes-db-pvc
+    project: conexao-solidaria
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Mi
+  # storageClassName: standard
+
+
+# *********************************************************************************************************************** #
+# REDIS                                                                                                           #       
+# *********************************************************************************************************************** #
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: cs-redis-pvc
+  labels:
+    app: cs-redis-pvc
+    project: conexao-solidaria
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Mi
+  # storageClassName: standard

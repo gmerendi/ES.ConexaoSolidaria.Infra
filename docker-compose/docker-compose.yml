@@ -1,0 +1,13 @@
+services:
+  ###########################################################################
+  # USUARIOS API
+  ###########################################################################
+  cs.usuarios.api:
+    build:
+      context: ../../ES.ConexaoSolidaria.Usuarios   
+      dockerfile: src/Usuarios.Api/Dockerfile
+    image: cs-usuarios-api:latest                
+    container_name: cs-usuarios-api
+    ports:
+      - "5001:8080"
+    restart: on-failure
