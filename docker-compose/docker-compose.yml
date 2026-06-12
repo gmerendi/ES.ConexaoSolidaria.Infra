@@ -11,3 +11,17 @@ services:
     ports:
       - "5001:8080"
     restart: on-failure
+
+
+  ###########################################################################
+  # CAMPANHAS API
+  ###########################################################################
+  cs.campanhas.api:
+    build:
+      context: ../../ES.ConexaoSolidaria.Campanhas  
+      dockerfile: src/Campanhas.Api/Dockerfile
+    image: cs-campanhas-api:latest                
+    container_name: cs-campanhas-api
+    ports:
+      - "5002:8080"
+    restart: on-failure

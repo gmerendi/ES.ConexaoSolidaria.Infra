@@ -31,6 +31,12 @@ data:
   DYNAMODB_SERVICE_URL: "http://cs-dynamo-db:8000"
   DYNAMODB_SVC: cs-dynamo-db
 
+  #ElasticSearch
+  DISCOVERY_TYPE: "single-node"
+  XPACK_SECURITY_ENABLED: "false"
+  XPACK_SECURITY_HTTP_SSL_ENABLED: "false"
+  ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+
   #AWS - Chave Falsa, so para rodar o dynamo local
   AWS_ACCESS_KEY_ID: "fake-access-key"
   AWS_SECRET_ACCESS_KEY: "fake-secret-key"

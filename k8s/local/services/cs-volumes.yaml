@@ -116,3 +116,23 @@ spec:
     requests:
       storage: 50Mi
   # storageClassName: standard
+
+
+# *********************************************************************************************************************** #
+# ELASTICSEARCH                                                                                                           #       
+# *********************************************************************************************************************** #
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: cs-elasticsearch-pvc
+  labels:
+    app: cs-elasticsearch-pvc
+    project: conexao-solidaria
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Mi
+  # storageClassName: standard
