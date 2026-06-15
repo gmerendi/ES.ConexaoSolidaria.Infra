@@ -1,0 +1,109 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cs-elasticsearch
+  namespace: default
+  labels:
+    app: cs-elasticsearch
+    project: conexao-solidaria
+spec:
+  replicas: 1
+  # Recreate: PVC é ReadWriteOnce — não permite dois pods simultâneos
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: cs-elasticsearch
+  template:
+    metadata:
+      labels:
+        app: cs-elasticsearch
+        project: conexao-solidaria
+    spec:
+      # Elasticsearch exige que o vm.max_map_count seja >= 262144
+      # Esse initContainer ajusta o kernel antes do container principal subir
+      initContainers:
+        - name: increase-vm-max-map-count
+          image: busybox
+          command: ["sysctl", "-w", "vm.max_map_count=262144"]
+          securityContext:
+            privileged: true
+
+      containers:
+        - name: elasticsearch
+          image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+          ports:
+            - name: http
+              containerPort: 9200
+            - name: transport
+              containerPort: 9300
+
+          # ── Variáveis de ambiente — ConfigMap ────────────────────────────
+          env:
+            - name: discovery.type
+              valueFrom:
+                configMapKeyRef:
+                  name: cs-configmap
+                  key: DISCOVERY_TYPE
+
+            - name: xpack.security.enabled
+              valueFrom:
+                configMapKeyRef:
+                  name: cs-configmap
+                  key: XPACK_SECURITY_ENABLED
+
+            - name: xpack.security.http.ssl.enabled
+              valueFrom:
+                configMapKeyRef:
+                  name: cs-configmap
+                  key: XPACK_SECURITY_HTTP_SSL_ENABLED
+
+            - name: ES_JAVA_OPTS
+              valueFrom:
+                configMapKeyRef:
+                  name: cs-configmap
+                  key: ES_JAVA_OPTS
+
+          # ── Recursos ─────────────────────────────────────────────────────
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"    # Elasticsearch precisa de mais memória que outros serviços
+            limits:
+              cpu: "1000m"
+              memory: "1.5Gi"
+
+          # ── Liveness Probe ────────────────────────────────────────────────
+          # Verifica se o cluster está vivo
+          # initialDelaySeconds alto pois Elasticsearch demora ~60s para iniciar
+          livenessProbe:
+            httpGet:
+              path: /_cluster/health
+              port: 9200
+            initialDelaySeconds: 90
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+            successThreshold: 1
+
+          # ── Readiness Probe ───────────────────────────────────────────────
+          # Só marca como pronto quando o cluster estiver green ou yellow
+          readinessProbe:
+            httpGet:
+              path: /_cluster/health?wait_for_status=yellow&timeout=5s
+              port: 9200
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            timeoutSeconds: 10
+            failureThreshold: 5
+            successThreshold: 1
+
+          # ── Volume ────────────────────────────────────────────────────────
+          volumeMounts:
+            - name: cs-elasticsearch-data
+              mountPath: /usr/share/elasticsearch/data
+
+      volumes:
+        - name: cs-elasticsearch-data
+          persistentVolumeClaim:
+            claimName: cs-elasticsearch-pvc
