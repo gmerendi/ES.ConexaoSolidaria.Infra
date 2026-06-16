@@ -5,7 +5,10 @@ FIAP <br>
 |---- ES.ConexaoSolidaria.Usuarios <br>
 |---- ES.ConexaoSolidaria.Campanhas <br>
 |---- ES.ConexaoSolidaria.Infra <br>
+|---- ES.ConexaoSolidaria.Notificacoes <br>
+|---- ES.ConexaoSolidaria.Worker <br>
 |---- ES.ConexaoSolidaria.Gateway <br>
+|---- ES.ConexaoSolidaria.Frontend <br>
 
 <br>
 <br>
