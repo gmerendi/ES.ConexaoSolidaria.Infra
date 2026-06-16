@@ -344,6 +344,84 @@ services:
 
 
 
+  ###########################################################################
+  # NOTIFICACOES
+  ###########################################################################
+  cs.notificacoes:
+    image: ${DOCKER_REGISTRY-}cs-notificacoes-app:v1
+    build:
+      context: ../../ES.ConexaoSolidaria.Notificacoes
+      dockerfile: src/Notificacoes/Dockerfile
+    container_name: cs-notificacoes
+    ports:
+      - 5005:8080
+    depends_on:
+      cs.rabbitmq:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+
+      #ConnectionStrings
+      ConnectionStrings__Database: "Host=cs-campanhas-db;Port=5432;Database=cs-campanhas;Username=fiap;Password=fiap123"
+      ConnectionStrings__AuditLog: "http://cs-dynamo-db:8000"
+      ConnectionStrings__Redis: "cs-redis:6379"
+      ConnectionStrings__ElasticSearch: "http://cs-elasticsearch:9200"
+
+      #RabbitMq
+      RabbitMq__Host: "cs-rabbitmq"
+      RabbitMq__Username: "fiap"
+      RabbitMq__Password: "fiap123"
+
+      #Queues
+      QUEUES__USER_CREATED_QUEUE: "user-created-queue"
+      QUEUES__DONATION_PROCESSED_QUEUE: "donation_processed-queue"
+
+      #JWT
+      Jwt__SecretKey: "ChaveSuperSecretaComMaisDe32CaracteresAqui12345"
+      Jwt__Issuer: "ES-ConexaoSolidariaIssuer"
+      Jwt__Audience: "ES-ConexaoSolidariaClient"
+      Jwt__ExpirationHours: "3"
+      AES__KEY: "W36tuZgAwZTkvGebRMEQJjGtbLNJRK6unGj1Ow5Rnm8="
+
+      # Cache TTL
+      Cache__CampanhaAtivaTTLSeconds: "60"
+      Cache__CampanhaNaoAtivaTTLSeconds: "86400"
+
+      #Email
+      Email__SmtpHost: "cs-mailpit"
+      Email__SmtpPort: "1025"
+      Email__NomeRemetente: "Conexao Solidaria"
+      Email__EmailRemetente: "noreply@conexao-solidaria.com.br"
+
+      #Logs
+      CustomLogging__LogInfo: "True"
+      CustomLogging__LogError: "True"
+      CustomLogging__LogWarning: "True"
+      CustomLogging__SendLogToDB: "True"
+
+      #Configuration
+      Application__Type: "LOCAL"
+      Admin__Email: "admin@conexao-solidaria.com.br"
+      Admin__Password: "12345678Aa#"
+    networks: 
+      - csnetwork
+    restart: on-failure
+
+  ###########################################################################
+  # MAILPIT
+  ###########################################################################
+  cs.mailpit:
+    image: axllent/mailpit:latest
+    container_name: cs-mailpit
+    ports:
+      - "1025:1025"  # SMTP — o worker envia para essa porta
+      - "8025:8025"  # Interface web 
+    networks: 
+      - csnetwork
+
+
+
 
   ###########################################################################
   # PROMETHEUS
