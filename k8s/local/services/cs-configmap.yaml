@@ -31,6 +31,12 @@ data:
   DYNAMODB_SERVICE_URL: "http://cs-dynamo-db:8000"
   DYNAMODB_SVC: cs-dynamo-db
 
+  #Redis
+  REDIS_SERVICE_URL: "cs-redis:6379"
+  ELASTICSEARCH_SERVICE_URL: "http://cs-elasticsearch:9200"
+  CACHE_CAMPANHA_ATIVA_TTL_SECONDS: "60"
+  CACHE_CAMPANHA_NAO_ATIVA_TTL_SECONDS: "86400"
+
   #ElasticSearch
   DISCOVERY_TYPE: "single-node"
   XPACK_SECURITY_ENABLED: "false"
