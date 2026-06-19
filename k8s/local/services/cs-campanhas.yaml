@@ -95,6 +95,19 @@ spec:
                   name: cs-configmap
                   key: RABBITMQ_SVC
 
+            #Cache
+            - name: Cache__CampanhaAtivaTTLSeconds
+              valueFrom:
+                configMapKeyRef:
+                  name: cs-configmap
+                  key: CACHE_CAMPANHA_ATIVA_TTL_SECONDS
+
+            - name: Cache__CampanhaNaoAtivaTTLSeconds
+              valueFrom:
+                configMapKeyRef:
+                  name: cs-configmap
+                  key: CACHE_CAMPANHA_NAO_ATIVA_TTL_SECONDS
+
             #Database
             - name: CAMPANHAS_DB_SVC
               valueFrom:
@@ -121,6 +134,17 @@ spec:
                 configMapKeyRef:
                   name: cs-configmap
                   key: DYNAMODB_SERVICE_URL
+            - name: REDIS_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: cs-configmap
+                  key: REDIS_SERVICE_URL
+            - name: ELASTICSEARCH_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: cs-configmap
+                  key: ELASTICSEARCH_SERVICE_URL
+
 
             #ConnectionStrings
             - name: ConnectionStrings__Database
@@ -130,10 +154,10 @@ spec:
               value: $(DYNAMODB_SERVICE_URL)
 
             - name: ConnectionStrings__Redis
-              value: "cs-redis:6379"
+              value: $(REDIS_SERVICE_URL)
 
             - name: ConnectionStrings__ElasticSearch
-              value: "http://cs-elasticsearch:9200"
+              value: $(ELASTICSEARCH_SERVICE_URL)
 
             #AWS
             - name: AWS_ACCESS_KEY_ID

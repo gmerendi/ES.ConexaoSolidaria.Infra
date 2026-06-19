@@ -1,9 +1,9 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: cs-usuarios-api
+  name: cs-donationworker
   labels:
-    app: cs-usuarios-api
+    app: cs-donationworker
     project: conexao-solidaria
 spec:
   replicas: 1
@@ -14,16 +14,16 @@ spec:
       maxUnavailable: 0  # garante zero downtime
   selector:
     matchLabels:
-      app: cs-usuarios-api
+      app: cs-donationworker
   template:
     metadata:
       labels:
-        app: cs-usuarios-api
+        app: cs-donationworker
         project: conexao-solidaria
     spec:
       containers:
-        - name: cs-usuarios-api
-          image: cs-usuarios-api:latest
+        - name: cs-donationworker
+          image: cs-campanhas-api:latest
           # imagePullPolicy: Never → usa a imagem local buildada pelo docker-compose
           imagePullPolicy: Always
           ports:
@@ -96,26 +96,26 @@ spec:
                   key: RABBITMQ_SVC
 
             #Database
-            - name: USUARIOS_DB_SVC
+            - name: CAMPANHAS_DB_SVC
               valueFrom:
                 configMapKeyRef:
                   name: cs-configmap
-                  key: USUARIOS_DB_SVC
-            - name: USUARIOS_DB_NAME
+                  key: CAMPANHAS_DB_SVC
+            - name: CAMPANHAS_DB_NAME
               valueFrom:
                 configMapKeyRef:
                   name: cs-configmap
-                  key: USUARIOS_POSTGRES_DB
-            - name: USUARIOS_DB_PASS
+                  key: CAMPANHAS_POSTGRES_DB
+            - name: CAMPANHAS_DB_PASS
               valueFrom:
                 secretKeyRef:
                   name: cs-secrets
-                  key: USUARIOS_POSTGRES_PASSWORD
-            - name: USUARIOS_DB_USER
+                  key: CAMPANHAS_POSTGRES_PASSWORD
+            - name: CAMPANHAS_DB_USER
               valueFrom:
                 secretKeyRef:
                   name: cs-secrets
-                  key: USUARIOS_POSTGRES_USER
+                  key: CAMPANHAS_POSTGRES_USER
             - name: DYNAMODB_SERVICE_URL
               valueFrom:
                 configMapKeyRef:
@@ -134,7 +134,7 @@ spec:
 
             #ConnectionStrings
             - name: ConnectionStrings__Database
-              value: "Host=$(USUARIOS_DB_SVC);Database=$(USUARIOS_DB_NAME);Username=$(USUARIOS_DB_USER);Password=$(USUARIOS_DB_PASS)"
+              value: "Host=$(CAMPANHAS_DB_SVC);Database=$(CAMPANHAS_DB_NAME);Username=$(CAMPANHAS_DB_USER);Password=$(CAMPANHAS_DB_PASS)"
 
             - name: ConnectionStrings__AuditLog
               value: $(DYNAMODB_SERVICE_URL)

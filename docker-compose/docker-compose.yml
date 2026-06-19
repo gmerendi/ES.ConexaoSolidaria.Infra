@@ -172,7 +172,7 @@ services:
   # USUARIOS-API
   ###########################################################################
   cs.usuarios.api:
-    image: ${DOCKER_REGISTRY-}cs-usuarios-app:v1
+    image: ${DOCKER_REGISTRY-}cs-usuarios-api:latest
     build:
       context: ../../ES.ConexaoSolidaria.Usuarios
       dockerfile: src/Usuarios.Api/Dockerfile
@@ -200,7 +200,7 @@ services:
       RabbitMq__Password: "fiap123"
 
       #Queues
-      USER_CREATED_QUEUE: "user-created-queue"
+      QUEUES__USER_CREATED_QUEUE: "user-created-queue"
 
       #JWT
       Jwt__SecretKey: "ChaveSuperSecretaComMaisDe32CaracteresAqui12345"
@@ -217,8 +217,6 @@ services:
 
       #Configuration
       Application__Type: "LOCAL"
-      Admin__Email: "admin@conexao-solidaria.com.br"
-      Admin__Password: "12345678Aa#"
     networks: 
       - csnetwork
     restart: on-failure
@@ -229,7 +227,7 @@ services:
   # CAMPANHAS-API
   ###########################################################################
   cs.campanhas.api:
-    image: ${DOCKER_REGISTRY-}cs-campanhas-app:v1
+    image: ${DOCKER_REGISTRY-}cs-campanhas-api:latest
     build:
       context: ../../ES.ConexaoSolidaria.Campanhas
       dockerfile: src/Campanhas.Api/Dockerfile
@@ -257,7 +255,7 @@ services:
       RabbitMq__Password: "fiap123"
 
       #Queues
-      USER_CREATED_QUEUE: "user-created-queue"
+      QUEUES__USER_CREATED_QUEUE: "user-created-queue"
 
       #JWT
       Jwt__SecretKey: "ChaveSuperSecretaComMaisDe32CaracteresAqui12345"
@@ -278,8 +276,6 @@ services:
 
       #Configuration
       Application__Type: "LOCAL"
-      Admin__Email: "admin@conexao-solidaria.com.br"
-      Admin__Password: "12345678Aa#"
     networks: 
       - csnetwork
     restart: on-failure
@@ -289,7 +285,7 @@ services:
   # WORKER
   ###########################################################################
   cs.donationworker:
-    image: ${DOCKER_REGISTRY-}cs-donationworker-app:v1
+    image: ${DOCKER_REGISTRY-}cs-donationworker-api:latest
     build:
       context: ../../ES.ConexaoSolidaria.Worker
       dockerfile: src/DonationWorker/Dockerfile
@@ -306,8 +302,6 @@ services:
       #ConnectionStrings
       ConnectionStrings__Database: "Host=cs-campanhas-db;Port=5432;Database=cs-campanhas;Username=fiap;Password=fiap123"
       ConnectionStrings__AuditLog: "http://cs-dynamo-db:8000"
-      ConnectionStrings__Redis: "cs-redis:6379"
-      ConnectionStrings__ElasticSearch: "http://cs-elasticsearch:9200"
 
       #RabbitMq
       RabbitMq__Host: "cs-rabbitmq"
@@ -336,8 +330,6 @@ services:
 
       #Configuration
       Application__Type: "LOCAL"
-      Admin__Email: "admin@conexao-solidaria.com.br"
-      Admin__Password: "12345678Aa#"
     networks: 
       - csnetwork
     restart: on-failure
@@ -348,7 +340,7 @@ services:
   # NOTIFICACOES
   ###########################################################################
   cs.notificacoes:
-    image: ${DOCKER_REGISTRY-}cs-notificacoes-app:v1
+    image: ${DOCKER_REGISTRY-}cs-notificacoes-api:latest
     build:
       context: ../../ES.ConexaoSolidaria.Notificacoes
       dockerfile: src/Notificacoes/Dockerfile
@@ -375,6 +367,7 @@ services:
 
       #Queues
       QUEUES__USER_CREATED_QUEUE: "user-created-queue"
+      QUEUES__DONATION_CREATED_QUEUE: "donation-created-queue"
       QUEUES__DONATION_PROCESSED_QUEUE: "donation_processed-queue"
 
       #JWT
@@ -404,6 +397,98 @@ services:
       Application__Type: "LOCAL"
       Admin__Email: "admin@conexao-solidaria.com.br"
       Admin__Password: "12345678Aa#"
+    networks: 
+      - csnetwork
+    restart: on-failure
+
+
+  ###########################################################################
+  # GATEWAY
+  ###########################################################################
+  cs.gateway.api:
+    image: ${DOCKER_REGISTRY-}cs-gateway-app:v1
+    build:
+      context:  ../../ES.ConexaoSolidaria.Gateway
+      dockerfile: src/Gateway.Api/Dockerfile
+    container_name: cs-gateway-api
+    ports:
+      - 5006:8080
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+
+      #JWT
+      Jwt__SecretKey: "ChaveSuperSecretaComMaisDe32CaracteresAqui12345"
+      Jwt__Issuer: "ES-ConexaoSolidariaIssuer"
+      Jwt__Audience: "ES-ConexaoSolidariaClient"
+      Jwt__ExpirationHours: "3"
+      AES__KEY: "W36tuZgAwZTkvGebRMEQJjGtbLNJRK6unGj1Ow5Rnm8="
+
+      #Logs
+      CustomLogging__LogInfo: "True"
+      CustomLogging__LogError: "True"
+      CustomLogging__LogWarning: "True"
+      CustomLogging__SendLogToDB: "True"
+
+      #RateLimiting
+      RateLimiting__PermitLimit: "100"
+      RateLimiting__WindowSeconds: "60"
+
+      #Gateway
+      Gateway__BaseUrl: "http://localhost:5000"
+
+      #Configuration
+      Application__Type: "LOCAL"
+
+      #Swagger
+      Swagger__Endpoints__0__Id: "usuarios"
+      Swagger__Endpoints__0__Url: "http://cs-usuarios-api:8080/swagger/v1/swagger.json"
+      Swagger__Endpoints__0__Name: "Usuarios API"
+
+      Swagger__Endpoints__1__Id: "campanhas"
+      Swagger__Endpoints__1__Url: "http://cs-campanhas-api:8080/swagger/v1/swagger.json"
+      Swagger__Endpoints__1__Name: "Campanhas API"
+
+      #ReverseProxy - Routes
+      ReverseProxy__Routes__auth-publico__ClusterId: "usuarios-cluster"
+      ReverseProxy__Routes__auth-publico__AuthorizationPolicy: "public"
+      ReverseProxy__Routes__auth-publico__Match__Path: "/api/v1/auth/{**catch-all}"
+
+      ReverseProxy__Routes__usuarios-cadastro__ClusterId: "usuarios-cluster"
+      ReverseProxy__Routes__usuarios-cadastro__AuthorizationPolicy: "public"
+      ReverseProxy__Routes__usuarios-cadastro__Match__Path: "/api/v1/usuario"
+      ReverseProxy__Routes__usuarios-cadastro__Match__Methods__0: "POST"
+
+      ReverseProxy__Routes__usuarios-autenticado__ClusterId: "usuarios-cluster"
+      ReverseProxy__Routes__usuarios-autenticado__AuthorizationPolicy: "authenticated"
+      ReverseProxy__Routes__usuarios-autenticado__Match__Path: "/api/v1/usuario/{**catch-all}"
+
+      ReverseProxy__Routes__campanhas-todas__ClusterId: "campanhas-cluster"
+      ReverseProxy__Routes__campanhas-todas__AuthorizationPolicy: "public"
+      ReverseProxy__Routes__campanhas-todas__Match__Path: "/api/v1/Campanhas/todas"
+
+      ReverseProxy__Routes__campanhas-autenticado__ClusterId: "campanhas-cluster"
+      ReverseProxy__Routes__campanhas-autenticado__AuthorizationPolicy: "authenticated"
+      ReverseProxy__Routes__campanhas-autenticado__Match__Path: "/api/v1/Campanhas/{**catch-all}"
+
+      ReverseProxy__Routes__doacoes-autenticado__ClusterId: "campanhas-cluster"
+      ReverseProxy__Routes__doacoes-autenticado__AuthorizationPolicy: "authenticated"
+      ReverseProxy__Routes__doacoes-autenticado__Match__Path: "/api/v1/Doacoes/{**catch-all}"
+
+      ReverseProxy__Routes__health-usuarios__ClusterId: "usuarios-cluster"
+      ReverseProxy__Routes__health-usuarios__AuthorizationPolicy: "public"
+      ReverseProxy__Routes__health-usuarios__Match__Path: "/health/usuarios"
+      ReverseProxy__Routes__health-usuarios__Transforms__0__PathSet: "/health"
+
+      ReverseProxy__Routes__health-campanhas__ClusterId: "campanhas-cluster"
+      ReverseProxy__Routes__health-campanhas__AuthorizationPolicy: "public"
+      ReverseProxy__Routes__health-campanhas__Match__Path: "/health/campanhas"
+      ReverseProxy__Routes__health-campanhas__Transforms__0__PathSet: "/health"
+
+      #ReverseProxy - Clusters
+      ReverseProxy__Clusters__usuarios-cluster__Destinations__usuarios-api__Address: "http://cs-usuarios-api:8080"
+      ReverseProxy__Clusters__campanhas-cluster__Destinations__campanhas-api__Address: "http://cs-campanhas-api:8080"
+ 
     networks: 
       - csnetwork
     restart: on-failure
@@ -449,6 +534,38 @@ services:
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+
+
+  ###########################################################################
+  # GRAFANA
+  ###########################################################################
+  cs.grafana:
+    image: grafana/grafana:11.1.0
+    container_name: cs-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: fiap123
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    configs:
+      - source: grafana_datasource
+        target: /etc/grafana/provisioning/datasources/prometheus.yaml
+    volumes:
+      # Apenas o dashboard (pasta inteira — sem problema no Windows)
+      - ./observability/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    networks:
+      - csnetwork
+    depends_on:
+      - cs.prometheus
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
