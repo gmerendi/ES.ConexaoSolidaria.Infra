@@ -31,6 +31,18 @@ configs:
           metrics_path: /metrics
           scrape_interval: 10s
 
+        - job_name: "campanhas-api"
+          static_configs:
+            - targets: ["cs-campanhas-api:8080"]
+          metrics_path: /metrics
+          scrape_interval: 10s
+
+        - job_name: "donationworker"
+          static_configs:
+            - targets: ["cs-donationworker-api:8080"]
+          metrics_path: /metrics
+          scrape_interval: 10s
+
         - job_name: "prometheus"
           static_configs:
             - targets: ["localhost:9090"]
@@ -531,6 +543,8 @@ services:
       - csnetwork
     depends_on:
       - cs.usuarios.api
+      - cs.campanhas.api
+      - cs.donationworker
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]

@@ -1,0 +1,397 @@
+{
+  "title": "ConexaoSolidaria — Worker Doacoes",
+  "uid": "conexao-solidaria-donationworker",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "10s",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "tags": [ "conexao-solidaria", "donationworker", "dotnet" ],
+  "panels": [
+
+    {
+      "id": 1,
+      "title": "🖥️ CPU — Uso do Processo (.NET)",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1,
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 15
+          }
+        }
+      },
+      "options": { "tooltip": { "mode": "multi" } },
+      "targets": [
+        {
+          "expr": "rate(process_cpu_seconds_total{job=\"donationworker\"}[1m])",
+          "legendFormat": "CPU (rate 1m)"
+        }
+      ]
+    },
+
+    {
+      "id": 2,
+      "title": "🧠 Memória — Heap .NET (Working Set)",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 15
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "process_working_set_bytes{job=\"donationworker\"}",
+          "legendFormat": "Working Set"
+        },
+        {
+          "expr": "dotnet_total_memory_bytes{job=\"donationworker\"}",
+          "legendFormat": "GC Heap Total"
+        },
+        {
+          "expr": "process_virtual_memory_bytes{job=\"donationworker\"}",
+          "legendFormat": "Virtual Memory"
+        }
+      ]
+    },
+
+    {
+      "id": 3,
+      "title": "💾 Disco — Handles Abertos",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "process_open_handles{job=\"donationworker\"}",
+          "legendFormat": "File Handles Abertos"
+        }
+      ]
+    },
+
+    {
+      "id": 4,
+      "title": "📨 Mensagens Processadas por Segundo",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 12,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(rabbitmq_message_processing_duration_seconds_count{job=\"donationworker\"}[1m])) by (event, success)",
+          "legendFormat": "{{ event }} — sucesso={{ success }}"
+        }
+      ]
+    },
+
+    {
+      "id": 5,
+      "title": "Doações (Total Acumulado)",
+      "type": "stat",
+      "gridPos": {
+        "x": 12,
+        "y": 16,
+        "w": 6,
+        "h": 6
+      },
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": [ "lastNotNull" ] },
+        "graphMode": "none"
+      },
+      "targets": [
+        {
+          "expr": "campanha_doacoes_total{job=\"donationworker\"}",
+          "legendFormat": "Total Realizadas"
+        }
+      ]
+    },
+
+    {
+      "id": 6,
+      "title": "⏱️ Latência de Processamento — p90 / p95 / p99",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 0,
+        "y": 22,
+        "w": 24,
+        "h": 10
+      },
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "spanNulls": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "p99"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "red",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "p95"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "orange",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "p90"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "green",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [ "mean", "max", "lastNotNull" ]
+        }
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.90, sum(rate(rabbitmq_message_processing_duration_seconds_bucket{job=\"donationworker\"}[5m])) by (le, event))",
+          "legendFormat": "p90 — {{ event }}"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(rabbitmq_message_processing_duration_seconds_bucket{job=\"donationworker\"}[5m])) by (le, event))",
+          "legendFormat": "p95 — {{ event }}"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(rabbitmq_message_processing_duration_seconds_bucket{job=\"donationworker\"}[5m])) by (le, event))",
+          "legendFormat": "p99 — {{ event }}"
+        }
+      ]
+    },
+
+    {
+      "id": 7,
+      "title": "📊 Latência Média por Evento",
+      "type": "bargauge",
+      "gridPos": {
+        "x": 0,
+        "y": 32,
+        "w": 24,
+        "h": 8
+      },
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 200
+              },
+              {
+                "color": "orange",
+                "value": 500
+              },
+              {
+                "color": "red",
+                "value": 1000
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "orientation": "horizontal",
+        "reduceOptions": { "calcs": [ "lastNotNull" ] },
+        "displayMode": "gradient"
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(rabbitmq_message_processing_duration_seconds_sum{job=\"donationworker\"}[5m])) by (event, success) / sum(rate(rabbitmq_message_processing_duration_seconds_count{job=\"donationworker\"}[5m])) by (event, success) * 1000",
+          "legendFormat": "{{ event }} — sucesso={{ success }}"
+        }
+      ]
+    },
+
+    {
+      "id": 8,
+      "title": "🧵 Threads .NET em Uso",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 0,
+        "y": 40,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "process_num_threads{job=\"donationworker\"}",
+          "legendFormat": "Threads Totais"
+        },
+        {
+          "expr": "dotnet_threadpool_num_threads{job=\"donationworker\"}",
+          "legendFormat": "Thread Pool"
+        }
+      ]
+    },
+
+    {
+      "id": 9,
+      "title": "🗑️ GC Collections por Geração",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 12,
+        "y": 40,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 5
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "rate(dotnet_collection_count_total{job=\"donationworker\", generation=\"0\"}[1m])",
+          "legendFormat": "GC Gen0"
+        },
+        {
+          "expr": "rate(dotnet_collection_count_total{job=\"donationworker\", generation=\"1\"}[1m])",
+          "legendFormat": "GC Gen1"
+        },
+        {
+          "expr": "rate(dotnet_collection_count_total{job=\"donationworker\", generation=\"2\"}[1m])",
+          "legendFormat": "GC Gen2"
+        }
+      ]
+    }
+
+  ]
+}
