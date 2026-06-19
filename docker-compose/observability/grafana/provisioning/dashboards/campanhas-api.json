@@ -1,0 +1,519 @@
+{
+  "title": "ConexaoSolidaria — Campanhas API",
+  "uid": "conexao-solidaria-campanhas",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "10s",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "tags": [ "conexao-solidaria", "campanhas", "dotnet" ],
+  "panels": [
+
+    {
+      "id": 1,
+      "title": "🖥️ CPU — Uso do Processo (.NET)",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1,
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 15
+          }
+        }
+      },
+      "options": { "tooltip": { "mode": "multi" } },
+      "targets": [
+        {
+          "expr": "rate(process_cpu_seconds_total{job=\"campanhas-api\"}[1m])",
+          "legendFormat": "CPU (rate 1m)"
+        }
+      ]
+    },
+
+    {
+      "id": 2,
+      "title": "🧠 Memória — Heap .NET (Working Set)",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 15
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "process_working_set_bytes{job=\"campanhas-api\"}",
+          "legendFormat": "Working Set"
+        },
+        {
+          "expr": "dotnet_total_memory_bytes{job=\"campanhas-api\"}",
+          "legendFormat": "GC Heap Total"
+        },
+        {
+          "expr": "process_virtual_memory_bytes{job=\"campanhas-api\"}",
+          "legendFormat": "Virtual Memory"
+        }
+      ]
+    },
+
+    {
+      "id": 3,
+      "title": "💾 Disco — Handles Abertos",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "process_open_handles{job=\"campanhas-api\"}",
+          "legendFormat": "File Handles Abertos"
+        }
+      ]
+    },
+
+    {
+      "id": 4,
+      "title": "🌐 Rede — Requisições HTTP por Segundo",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 12,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(http_request_duration_seconds_count{job=\"campanhas-api\"}[1m])) by (route)",
+          "legendFormat": "{{ route }}"
+        }
+      ]
+    },
+
+    {
+      "id": 5,
+      "title": "📢 Campanhas Criadas (Total Acumulado)",
+      "type": "stat",
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 6,
+        "h": 6
+      },
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": [ "lastNotNull" ] },
+        "graphMode": "none"
+      },
+      "targets": [
+        {
+          "expr": "campanhas_criadas_total{job=\"campanhas-api\"}",
+          "legendFormat": "Total Criadas"
+        }
+      ]
+    },
+
+    {
+      "id": 6,
+      "title": "✅ Campanhas Concluídas (Total Acumulado)",
+      "type": "stat",
+      "gridPos": {
+        "x": 6,
+        "y": 16,
+        "w": 6,
+        "h": 6
+      },
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": [ "lastNotNull" ] },
+        "graphMode": "none"
+      },
+      "targets": [
+        {
+          "expr": "campahas_concluidas_total{job=\"campanhas-api\"}",
+          "legendFormat": "Total Concluídas"
+        }
+      ]
+    },
+
+    {
+      "id": 7,
+      "title": "🚫 Campanhas Canceladas (Total Acumulado)",
+      "type": "stat",
+      "gridPos": {
+        "x": 12,
+        "y": 16,
+        "w": 6,
+        "h": 6
+      },
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 10
+              },
+              {
+                "color": "red",
+                "value": 50
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": [ "lastNotNull" ] },
+        "graphMode": "none"
+      },
+      "targets": [
+        {
+          "expr": "campahas_canceladas_total{job=\"campanhas-api\"}",
+          "legendFormat": "Total Canceladas"
+        }
+      ]
+    },
+
+    {
+      "id": 8,
+      "title": "💸 Intenções de Doação (Total Acumulado)",
+      "type": "stat",
+      "gridPos": {
+        "x": 18,
+        "y": 16,
+        "w": 6,
+        "h": 6
+      },
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": [ "lastNotNull" ] },
+        "graphMode": "none"
+      },
+      "targets": [
+        {
+          "expr": "campanha_intencoes_total{job=\"campanhas-api\"}",
+          "legendFormat": "Total Intenções"
+        }
+      ]
+    },
+
+    {
+      "id": 9,
+      "title": "⏱️ Latência HTTP — p90 / p95 / p99",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 0,
+        "y": 22,
+        "w": 24,
+        "h": 10
+      },
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "spanNulls": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "p99"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "red",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "p95"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "orange",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "p90"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "green",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [ "mean", "max", "lastNotNull" ]
+        }
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.90, sum(rate(http_request_duration_seconds_bucket{job=\"campanhas-api\"}[5m])) by (le, route))",
+          "legendFormat": "p90 — {{ route }}"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job=\"campanhas-api\"}[5m])) by (le, route))",
+          "legendFormat": "p95 — {{ route }}"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{job=\"campanhas-api\"}[5m])) by (le, route))",
+          "legendFormat": "p99 — {{ route }}"
+        }
+      ]
+    },
+
+    {
+      "id": 10,
+      "title": "📊 Latência Média por Rota",
+      "type": "bargauge",
+      "gridPos": {
+        "x": 0,
+        "y": 32,
+        "w": 24,
+        "h": 8
+      },
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 200
+              },
+              {
+                "color": "orange",
+                "value": 500
+              },
+              {
+                "color": "red",
+                "value": 1000
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "orientation": "horizontal",
+        "reduceOptions": { "calcs": [ "lastNotNull" ] },
+        "displayMode": "gradient"
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(http_request_duration_seconds_sum{job=\"campanhas-api\"}[5m])) by (route) / sum(rate(http_request_duration_seconds_count{job=\"campanhas-api\"}[5m])) by (route) * 1000",
+          "legendFormat": "{{ route }}"
+        }
+      ]
+    },
+
+    {
+      "id": 11,
+      "title": "🧵 Threads .NET em Uso",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 0,
+        "y": 40,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "process_num_threads{job=\"campanhas-api\"}",
+          "legendFormat": "Threads Totais"
+        },
+        {
+          "expr": "dotnet_threadpool_num_threads{job=\"campanhas-api\"}",
+          "legendFormat": "Thread Pool"
+        }
+      ]
+    },
+
+    {
+      "id": 12,
+      "title": "🗑️ GC Collections por Geração",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 12,
+        "y": 40,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 5
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "rate(dotnet_collection_count_total{job=\"campanhas-api\", generation=\"0\"}[1m])",
+          "legendFormat": "GC Gen0"
+        },
+        {
+          "expr": "rate(dotnet_collection_count_total{job=\"campanhas-api\", generation=\"1\"}[1m])",
+          "legendFormat": "GC Gen1"
+        },
+        {
+          "expr": "rate(dotnet_collection_count_total{job=\"campanhas-api\", generation=\"2\"}[1m])",
+          "legendFormat": "GC Gen2"
+        }
+      ]
+    }
+
+  ]
+}
