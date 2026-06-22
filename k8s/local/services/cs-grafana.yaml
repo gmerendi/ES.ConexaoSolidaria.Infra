@@ -1,0 +1,108 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cs-grafana
+  labels:
+    app: cs-grafana
+    project: conexao-solidaria
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1        # Sobe 1 pod novo antes de derrubar o antigo
+      maxUnavailable: 0  # Garante zero downtime no processo de atualização
+  selector:
+    matchLabels:
+      app: cs-grafana
+  template:
+    metadata:
+      labels:
+        app: cs-grafana
+    spec:
+      containers:
+        - name: grafana
+          image: grafana/grafana:11.1.0
+          ports:
+            - containerPort: 3000
+              name: web
+          
+          # ── Variáveis de Ambiente do Compose ──────────────────────────────
+          env:
+            - name: GF_SECURITY_ADMIN_USER
+              value: "admin"
+            - name: GF_SECURITY_ADMIN_PASSWORD
+              value: "fiap123"
+            - name: GF_USERS_ALLOW_SIGN_UP
+              value: "false"
+
+          # ── Sondas de Saúde (Baseadas no Healthcheck do Compose) ──────────
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 20
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 20
+            periodSeconds: 10
+
+          # ── Mapeamento dos Arquivos e Dados ────────────────────────────────
+          volumeMounts:
+            # Injeta o arquivo individual de Datasource do Prometheus
+            - name: provisioning-volume
+              mountPath: /etc/grafana/provisioning/datasources/prometheus.yaml
+              subPath: prometheus-datasource.yaml 
+            
+            # Injeta o arquivo individual de mapeamento de Dashboards (Provider)
+            - name: provisioning-volume
+              mountPath: /etc/grafana/provisioning/dashboards/dashboards.yaml
+              subPath: dashboards.yaml
+
+            # Armazenamento de dados do Grafana (Sessões, usuários internos, etc)
+            - name: grafana-storage
+              mountPath: /var/lib/grafana
+
+            # ── Injetando os Dashboards Gigantes na pasta monitorada pelo Provider ──
+            - name: user-dash-volume
+              mountPath: /var/lib/grafana/dashboards/usuarios-api.json
+              subPath: usuarios-api.json
+
+            - name: campaign-dash-volume
+              mountPath: /var/lib/grafana/dashboards/campanhas-api.json
+              subPath: campanhas-api.json
+
+            - name: donation-dash-volume
+              mountPath: /var/lib/grafana/dashboards/donationworker.json
+              subPath: donationworker.json
+
+      # ── Declaração dos Volumes do Cluster ──────────────────────────────────
+      volumes:
+        # Puxa os arquivos estruturais (Datasource e Provider) 
+        - name: provisioning-volume
+          configMap:
+            name: cs-observability-config 
+            items:
+              - key: grafana_datasource_prometheus.yml
+                path: prometheus-datasource.yaml
+              - key: dashboards.yml
+                path: dashboards.yaml
+                
+        - name: grafana-storage
+          emptyDir: {}
+
+        # Vincula os ConfigMaps
+        - name: user-dash-volume
+          configMap:
+            name: cs-grafana-user-dash
+
+        - name: campaign-dash-volume
+          configMap:
+            name: cs-grafana-campaign-dash
+
+        - name: donation-dash-volume
+          configMap:
+            name: cs-grafana-donation-dash

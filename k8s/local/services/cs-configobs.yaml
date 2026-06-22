@@ -1,0 +1,61 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cs-observability-config
+  labels:
+    app: cs-observability
+    project: conexao-solidaria
+data:
+  # ── Arquivo de Configuração do Prometheus ────────────────────────────────
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+
+    scrape_configs:
+      - job_name: "usuarios-api"
+        static_configs:
+          - targets: ["cs-usuarios-api-svc:5001"] # Corrigido para a porta 80 do Service
+        metrics_path: /metrics
+        scrape_interval: 10s
+
+      - job_name: "campanhas-api"
+        static_configs:
+          - targets: ["cs-campanhas-api-svc:5002"] # Corrigido para a porta 80 do Service
+        metrics_path: /metrics
+        scrape_interval: 10s
+
+      - job_name: "donationworker"
+        static_configs:
+          - targets: ["cs-donationworker-api-svc:5003"] 
+        metrics_path: /metrics
+        scrape_interval: 10s
+
+      - job_name: "prometheus"
+        static_configs:
+          - targets: ["cs-prometheus-svc:9090"]
+
+  # ── Arquivo de Datasource do Grafana ─────────────────────────────────────
+ 
+  grafana_datasource_prometheus.yml: |
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        access: proxy
+        url: http://cs-prometheus-svc:9090
+        isDefault: true
+        editable: false
+
+  
+  dashboards.yml: |
+    apiVersion: 1
+    providers:
+      - name: 'Default Provider'
+        orgId: 1
+        folder: ''
+        type: file
+        disableDeletion: false
+        editable: true
+        options:
+          path: /var/lib/grafana/dashboards

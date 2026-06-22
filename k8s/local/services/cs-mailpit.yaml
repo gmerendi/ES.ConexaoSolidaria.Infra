@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cs-mailpit
+  labels:
+    app: cs-mailpit
+    project: conexao-solidaria
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: cs-mailpit
+  template:
+    metadata:
+      labels:
+        app: cs-mailpit
+        project: conexao-solidaria
+    spec:
+      containers:
+        - name: cs-mailpit
+          image: axllent/mailpit:latest
+          ports:
+            - name: smtp
+              containerPort: 1025  # Porta onde os workers vão disparar e-mails
+            - name: webui
+              containerPort: 8025  # Porta para abrir o painel visual no navegador
+
+          # ── Recursos ────────────────────────────────────────────────────
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"     
+            limits:
+              cpu: "250m"
+              memory: "256Mi"
+
+          # ── Liveness Probe ───────────────────────────────────────────────
+          livenessProbe:
+            tcpSocket:
+              port: 1025
+            initialDelaySeconds: 15  
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          # ── Readiness Probe ──────────────────────────────────────────────
+          readinessProbe:
+            tcpSocket:
+              port: 1025
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3

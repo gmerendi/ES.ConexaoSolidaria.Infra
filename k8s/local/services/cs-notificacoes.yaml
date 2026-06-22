@@ -1,9 +1,9 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: cs-usuarios-api
+  name: cs-notificacoes
   labels:
-    app: cs-usuarios-api
+    app: cs-notificacoes
     project: conexao-solidaria
 spec:
   replicas: 1
@@ -14,16 +14,16 @@ spec:
       maxUnavailable: 0  # garante zero downtime
   selector:
     matchLabels:
-      app: cs-usuarios-api
+      app: cs-notificacoes
   template:
     metadata:
       labels:
-        app: cs-usuarios-api
+        app: cs-notificacoes
         project: conexao-solidaria
     spec:
       containers:
-        - name: cs-usuarios-api
-          image: cs-usuarios-api:latest
+        - name: cs-notificacoes
+          image: cs-notificacoes-api:latest
           # imagePullPolicy: Never → usa a imagem local buildada pelo docker-compose
           imagePullPolicy: Always
           ports:
@@ -45,14 +45,12 @@ spec:
                   name: cs-configmap
                   key: ASPNETCORE_URLS
 
-
             # Application Type - LOCAL ou LAB
             - name: Application__Type
               valueFrom:
                 configMapKeyRef:
                   name: cs-configmap
                   key: APPLICATION_TYPE
-
             #JWT
             - name: Jwt__SecretKey
               valueFrom:
@@ -103,27 +101,45 @@ spec:
                   name: cs-configmap
                   key: RABBITMQ_SVC
 
+            - name: QUEUES__DONATION_CREATED_QUEUE
+              valueFrom:
+                configMapKeyRef:
+                  name: cs-configmap
+                  key: RABBITMQ_DONATION_CREATED_QUEUE
+
+            - name: QUEUES__DONATION_PROCESSED_QUEUE
+              valueFrom:
+                configMapKeyRef:
+                  name: cs-configmap
+                  key: RABBITMQ_DONATION_PROCESSED_QUEUE
+
+            - name: QUEUES__USER_CREATED_QUEUE
+              valueFrom:
+                configMapKeyRef:
+                  name: cs-configmap
+                  key: RABBITMQ_USER_CREATED_QUEUE
+
             #Database
-            - name: USUARIOS_DB_SVC
+            - name: CAMPANHAS_DB_SVC
               valueFrom:
                 configMapKeyRef:
                   name: cs-configmap
-                  key: USUARIOS_DB_SVC
-            - name: USUARIOS_DB_NAME
+                  key: CAMPANHAS_DB_SVC
+            - name: CAMPANHAS_DB_NAME
               valueFrom:
                 configMapKeyRef:
                   name: cs-configmap
-                  key: USUARIOS_POSTGRES_DB
-            - name: USUARIOS_DB_PASS
+                  key: CAMPANHAS_POSTGRES_DB
+            - name: CAMPANHAS_DB_PASS
               valueFrom:
                 secretKeyRef:
                   name: cs-secrets
-                  key: USUARIOS_POSTGRES_PASSWORD
-            - name: USUARIOS_DB_USER
+                  key: CAMPANHAS_POSTGRES_PASSWORD
+            - name: CAMPANHAS_DB_USER
               valueFrom:
                 secretKeyRef:
                   name: cs-secrets
-                  key: USUARIOS_POSTGRES_USER
+                  key: CAMPANHAS_POSTGRES_USER
             - name: DYNAMODB_SERVICE_URL
               valueFrom:
                 configMapKeyRef:
@@ -142,7 +158,7 @@ spec:
 
             #ConnectionStrings
             - name: ConnectionStrings__Database
-              value: "Host=$(USUARIOS_DB_SVC);Database=$(USUARIOS_DB_NAME);Username=$(USUARIOS_DB_USER);Password=$(USUARIOS_DB_PASS)"
+              value: "Host=$(CAMPANHAS_DB_SVC);Database=$(CAMPANHAS_DB_NAME);Username=$(CAMPANHAS_DB_USER);Password=$(CAMPANHAS_DB_PASS)"
 
             - name: ConnectionStrings__AuditLog
               value: $(DYNAMODB_SERVICE_URL)
@@ -150,6 +166,8 @@ spec:
             - name: ConnectionStrings__Redis
               value: $(REDIS_SERVICE_URL)
 
+            - name: ConnectionStrings__ElasticSearch
+              value: $(ELASTICSEARCH_SERVICE_URL)
 
             #AWS
             - name: AWS_ACCESS_KEY_ID
@@ -176,7 +194,7 @@ spec:
                   name: cs-configmap
                   key: DYNAMODB_SERVICE_URL
 
-             #Logs
+            #Logs
             - name: CustomLogging__LogInfo
               valueFrom:
                 configMapKeyRef:
@@ -198,6 +216,28 @@ spec:
                 configMapKeyRef:
                   name: cs-configmap
                   key: CUSTOMLOGGING_SENDLOGTODB
+
+            #Mailpit
+            - name: Email__SmtpHost
+              valueFrom:
+                configMapKeyRef:
+                  name: cs-configmap
+                  key: EMAIL_SMTP_HOST
+            - name: Email__SmtpPort
+              valueFrom:
+                configMapKeyRef:
+                  name: cs-configmap
+                  key: EMAIL_SMTP_PORT
+            - name: Email__NomeRemetente
+              valueFrom:
+                configMapKeyRef:
+                  name: cs-configmap
+                  key: EMAIL_REMETENTE
+            - name: Email__EmailRemetente
+              valueFrom:
+                configMapKeyRef:
+                  name: cs-configmap
+                  key: EMAIL_EMAIL_REMETENTE
           
 
           # ── Recursos ────────────────────────────────────────────────────
@@ -210,25 +250,25 @@ spec:
               memory: "512Mi"
 
           # ── Liveness Probe ───────────────────────────────────────────────
-          # Se falhar: Kubernetes reinicia o container
+          # Se o arquivo sumir ou parar de atualizar, o Kubernetes reinicia o container
           livenessProbe:
-            httpGet:
-              path: /health/live
-              port: 8080
-            initialDelaySeconds: 60
+            exec:
+              command:
+                - cat
+                - /tmp/healthy
+            initialDelaySeconds: 30
             periodSeconds: 20
             timeoutSeconds: 5
             failureThreshold: 3
-            successThreshold: 1
 
           # ── Readiness Probe ──────────────────────────────────────────────
-          # Se falhar: pod sai do Service até estar pronto
+          # Só deixa o Pod ativo se o arquivo de saúde foi criado com sucesso pelo .NET
           readinessProbe:
-            httpGet:
-              path: /health/ready
-              port: 8080
-            initialDelaySeconds: 30
+            exec:
+              command:
+                - cat
+                - /tmp/healthy
+            initialDelaySeconds: 15
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 3
-            successThreshold: 1

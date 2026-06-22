@@ -303,7 +303,7 @@ services:
       dockerfile: src/DonationWorker/Dockerfile
     container_name: cs-donationworker-api
     ports:
-      - 5004:8080
+      - 5003:8080
     # depends_on:
     #   cs.campanhas.api:
     #     condition: service_healthy
@@ -358,7 +358,7 @@ services:
       dockerfile: src/Notificacoes/Dockerfile
     container_name: cs-notificacoes
     ports:
-      - 5005:8080
+      - 5004:8080
     depends_on:
       cs.rabbitmq:
         condition: service_healthy
@@ -418,7 +418,7 @@ services:
   # GATEWAY
   ###########################################################################
   cs.gateway.api:
-    image: ${DOCKER_REGISTRY-}cs-gateway-app:v1
+    image: ${DOCKER_REGISTRY-}cs-gateway-api:latest
     build:
       context:  ../../ES.ConexaoSolidaria.Gateway
       dockerfile: src/Gateway.Api/Dockerfile

@@ -76,6 +76,12 @@ spec:
                   name: cs-secrets
                   key: JWT_EXPIRATION_HOURS
 
+            - name: AES__KEY
+              valueFrom:
+                secretKeyRef:
+                  name: cs-secrets
+                  key: AES_KEY
+
             #Rabbitmq
             - name: RabbitMq__Password
               valueFrom:
@@ -183,6 +189,29 @@ spec:
                 configMapKeyRef:
                   name: cs-configmap
                   key: DYNAMODB_SERVICE_URL
+
+            #Logs
+            - name: CustomLogging__LogInfo
+              valueFrom:
+                configMapKeyRef:
+                  name: cs-configmap
+                  key: CUSTOMLOGGING_LOGINFO
+            - name: CustomLogging__LogError
+              valueFrom:
+                configMapKeyRef:
+                  name: cs-configmap
+                  key: CUSTOMLOGGING_LOGERROR
+            - name: CustomLogging__LogWarning
+              valueFrom:
+                configMapKeyRef:
+                  name: cs-configmap
+                  key: CUSTOMLOGGING_LOGWARNING
+            # Envia todos os logs para o DynamoDB. Eventos são sempre enviados
+            - name: CustomLogging__SendLogToDB
+              valueFrom:
+                configMapKeyRef:
+                  name: cs-configmap
+                  key: CUSTOMLOGGING_SENDLOGTODB
           
 
           # ── Recursos ────────────────────────────────────────────────────

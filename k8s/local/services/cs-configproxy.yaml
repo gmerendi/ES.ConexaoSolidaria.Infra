@@ -1,0 +1,64 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cs-configproxy
+  labels:
+    name: cs-configproxy
+data: 
+
+  #RateLimiting
+  RateLimiting__PermitLimit: "100"
+  RateLimiting__WindowSeconds: "60"
+
+  #Gateway
+  Gateway__BaseUrl: "http://cs-gateway-api-svc:5006"
+
+  #Swagger
+  Swagger__Endpoints__0__Id: "usuarios"
+  Swagger__Endpoints__0__Url: "http://cs-usuarios-api-svc:5001/swagger/v1/swagger.json"
+  Swagger__Endpoints__0__Name: "Usuarios API"
+
+  Swagger__Endpoints__1__Id: "campanhas"
+  Swagger__Endpoints__1__Url: "http://cs-campanhas-api-svc:5002/swagger/v1/swagger.json"
+  Swagger__Endpoints__1__Name: "Campanhas API"
+
+
+  #ReverseProxy - Routes
+  ReverseProxy__Routes__auth-publico__ClusterId: "usuarios-cluster"
+  ReverseProxy__Routes__auth-publico__AuthorizationPolicy: "public"
+  ReverseProxy__Routes__auth-publico__Match__Path: "/api/v1/auth/{**catch-all}"
+
+  ReverseProxy__Routes__usuarios-cadastro__ClusterId: "usuarios-cluster"
+  ReverseProxy__Routes__usuarios-cadastro__AuthorizationPolicy: "public"
+  ReverseProxy__Routes__usuarios-cadastro__Match__Path: "/api/v1/usuario"
+  ReverseProxy__Routes__usuarios-cadastro__Match__Methods__0: "POST"
+
+  ReverseProxy__Routes__usuarios-autenticado__ClusterId: "usuarios-cluster"
+  ReverseProxy__Routes__usuarios-autenticado__AuthorizationPolicy: "authenticated"
+  ReverseProxy__Routes__usuarios-autenticado__Match__Path: "/api/v1/usuario/{**catch-all}"
+
+  ReverseProxy__Routes__campanhas-todas__ClusterId: "campanhas-cluster"
+  ReverseProxy__Routes__campanhas-todas__AuthorizationPolicy: "public"
+  ReverseProxy__Routes__campanhas-todas__Match__Path: "/api/v1/Campanhas/todas"
+
+  ReverseProxy__Routes__campanhas-autenticado__ClusterId: "campanhas-cluster"
+  ReverseProxy__Routes__campanhas-autenticado__AuthorizationPolicy: "authenticated"
+  ReverseProxy__Routes__campanhas-autenticado__Match__Path: "/api/v1/Campanhas/{**catch-all}"
+
+  ReverseProxy__Routes__doacoes-autenticado__ClusterId: "campanhas-cluster"
+  ReverseProxy__Routes__doacoes-autenticado__AuthorizationPolicy: "authenticated"
+  ReverseProxy__Routes__doacoes-autenticado__Match__Path: "/api/v1/Doacoes/{**catch-all}"
+
+  ReverseProxy__Routes__health-usuarios__ClusterId: "usuarios-cluster"
+  ReverseProxy__Routes__health-usuarios__AuthorizationPolicy: "public"
+  ReverseProxy__Routes__health-usuarios__Match__Path: "/health/usuarios"
+  ReverseProxy__Routes__health-usuarios__Transforms__0__PathSet: "/health"
+
+  ReverseProxy__Routes__health-campanhas__ClusterId: "campanhas-cluster"
+  ReverseProxy__Routes__health-campanhas__AuthorizationPolicy: "public"
+  ReverseProxy__Routes__health-campanhas__Match__Path: "/health/campanhas"
+  ReverseProxy__Routes__health-campanhas__Transforms__0__PathSet: "/health"
+
+  #ReverseProxy - Clusters
+  ReverseProxy__Clusters__usuarios-cluster__Destinations__usuarios-api__Address: "http://cs-usuarios-api-svc:5001"
+  ReverseProxy__Clusters__campanhas-cluster__Destinations__campanhas-api__Address: "http://cs-campanhas-api-svc:5002"
