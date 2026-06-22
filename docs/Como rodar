@@ -2,18 +2,30 @@ DOCKER COMPOSE
 1. Abrir terminal na pasta docker-compose e rodar o comando:
 docker-compose up -- build
 
+2. Para deletar
+docker-compose down -v
+
 
 KUBERNETES
 1. Buildar as imagens
  Abrir terminal na pasta docker-compose e rodar o comando:
  docker-compose build
 
-2. Abrir Terminal na raiz
+2. Abrir o Terminal em docker-compose/observability/grafana/provisioning/dashboards
 
-3. Aplicar manifestos kubernetes localmente
+3. Rodar os comandos:
+kubectl create configmap cs-grafana-user-dash --from-file=usuarios-api.json
+kubectl create configmap cs-grafana-campaign-dash --from-file=campanhas-api.json
+kubectl create configmap cs-grafana-donation-dash --from-file=donationworker.json
+
+4. Abrir Terminal na raiz
+
+5. Aplicar manifestos kubernetes localmente
  kubectl apply -f k8s/local/services/cs-aws-credentials.yaml
  kubectl apply -f k8s/local/services/cs-aws-accounts.yaml
  kubectl apply -f k8s/local/services/cs-configmap.yaml
+ kubectl apply -f k8s/local/services/cs-configproxy.yaml
+ kubectl apply -f k8s/local/services/cs-configobs.yaml
  kubectl apply -f k8s/local/services/cs-secrets.yaml
  kubectl apply -f k8s/local/services/cs-services.yaml
  kubectl apply -f k8s/local/services/cs-volumes.yaml
@@ -22,6 +34,7 @@ KUBERNETES
  kubectl apply -f k8s/local/services/cs-dynamo.yaml
  kubectl apply -f k8s/local/services/cs-redis.yaml
  kubectl apply -f k8s/local/services/cs-elasticsearch.yaml
+ kubectl apply -f k8s/local/services/cs-mailpit.yaml
 
   kubectl get pods
 
@@ -30,11 +43,33 @@ KUBERNETES
  kubectl apply -f k8s/local/services/cs-usuarios.yaml
  kubectl apply -f k8s/local/services/cs-campanhas.yaml
  kubectl apply -f k8s/local/services/cs-donationworker.yaml
+ kubectl apply -f k8s/local/services/cs-notificacoes.yaml
+ kubectl apply -f k8s/local/services/cs-gateway.yaml
 
- 4. Reset do Kubernetes
- kubectl delete all --all
+ kubectl apply -f k8s/local/services/cs-prometheus.yaml
+ kubectl apply -f k8s/local/services/cs-grafana.yaml
+
+ 6. Para deletar
+ kubectl delete -f k8s/local/services/cs-prometheus.yaml
+ kubectl delete -f k8s/local/services/cs-grafana.yaml
+
+ kubectl delete -f k8s/local/services/cs-usuarios.yaml
+ kubectl delete -f k8s/local/services/cs-campanhas.yaml
+ kubectl delete -f k8s/local/services/cs-donationworker.yaml
+ kubectl delete -f k8s/local/services/cs-notificacoes.yaml
+ kubectl delete -f k8s/local/services/cs-gateway.yaml
+
+ kubectl delete -f k8s/local/services/cs-rabbitmq.yaml
+ kubectl delete -f k8s/local/services/cs-postgres.yaml
+ kubectl delete -f k8s/local/services/cs-dynamo.yaml
+ kubectl delete -f k8s/local/services/cs-redis.yaml
+ kubectl delete -f k8s/local/services/cs-elasticsearch.yaml
+ kubectl delete -f k8s/local/services/cs-mailpit.yaml
+
  kubectl delete -f k8s/local/services/cs-aws-credentials.yaml
  kubectl delete -f k8s/local/services/cs-aws-accounts.yaml
  kubectl delete -f k8s/local/services/cs-configmap.yaml
+ kubectl delete -f k8s/local/services/cs-configproxy.yaml
+ kubectl delete -f k8s/local/services/cs-configobs.yaml
  kubectl delete -f k8s/local/services/cs-secrets.yaml
  kubectl delete -f k8s/local/services/cs-volumes.yaml

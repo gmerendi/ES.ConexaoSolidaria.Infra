@@ -56,7 +56,7 @@ spec:
 
 
 # *********************************************************************************************************************** #
-# CAMPANHAS-DB                                                                                                             #       
+# CAMPANHAS-DB                                                                                                            #       
 # *********************************************************************************************************************** #
 ---
 apiVersion: v1
@@ -78,7 +78,7 @@ spec:
 
 
 # *********************************************************************************************************************** #
-# DOACOES-DB                                                                                                             #       
+# DOACOES-DB                                                                                                              #       
 # *********************************************************************************************************************** #
 ---
 apiVersion: v1
@@ -100,20 +100,20 @@ spec:
 
 
 # *********************************************************************************************************************** #
-# DYNAMODB                                                                                                             #       
+# DYNAMODB                                                                                                                #       
 # *********************************************************************************************************************** #
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: cs-dynamo-db
+  name: cs-dynamo-db-svc
   labels:
     app: cs-dynamo-db
     project: conexao-solidaria
 spec:
   selector:
     app: cs-dynamo-db
-  type:  LoadBalancer # Modificar apos testar localmente
+  type:  ClusterIP
   ports:
     - name: dynamodb
       port: 8000
@@ -122,20 +122,20 @@ spec:
 
 
 # *********************************************************************************************************************** #
-# REDIS                                                                                                           #       
+# REDIS                                                                                                                   #       
 # *********************************************************************************************************************** #
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: cs-redis
+  name: cs-redis-svc
   labels:
     app: cs-redis
     project: conexao-solidaria
 spec:
   selector:
     app: cs-redis
-  type:  LoadBalancer # Modificar apos testar localmente
+  type: ClusterIP
   ports:
     - name: redis
       port: 6379
@@ -157,7 +157,7 @@ metadata:
 spec:
   selector:
     app: cs-elasticsearch
-  type:  LoadBalancer # Modificar apos testar localmente
+  type: ClusterIP
   ports:
     - name: http
       port: 9200
@@ -170,20 +170,60 @@ spec:
 
 
 # *********************************************************************************************************************** #
-# USUARIOS API                                                                                                          #       
+# MAILPIT                                                                                                                 #       
 # *********************************************************************************************************************** #
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: cs-usuarios-api
+  name: cs-mailpit-svc
+  labels:
+    app: cs-mailpit
+    project: conexao-solidaria
+spec:
+  selector:
+    app: cs-mailpit
+  type: ClusterIP  
+  ports:
+    - name: smtp
+      port: 1025
+      targetPort: 1025
+      protocol: TCP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cs-mailpit-mgmt-svc
+  labels:
+    app: cs-mailpit
+    project: conexao-solidaria
+spec:
+  selector:
+    app: cs-mailpit
+  type: LoadBalancer 
+  ports:
+    - name: webui
+      port: 8025
+      targetPort: 8025
+      protocol: TCP
+
+
+# *********************************************************************************************************************** #
+# USUARIOS API                                                                                                            #       
+# *********************************************************************************************************************** #
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cs-usuarios-api-svc
   labels:
     app: cs-usuarios-api
     project: conexao-solidaria
 spec:
   selector:
     app: cs-usuarios-api
-  type: LoadBalancer # Modificar apos Api Gateway estar pronta
+  type: ClusterIP
   ports:
     - name: http
       port: 5001
@@ -198,14 +238,14 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: cs-campanhas-api
+  name: cs-campanhas-api-svc
   labels:
     app: cs-campanhas-api
     project: conexao-solidaria
 spec:
   selector:
     app: cs-campanhas-api
-  type: LoadBalancer # Modificar apos Api Gateway estar pronta
+  type: ClusterIP
   ports:
     - name: http
       port: 5002
@@ -214,22 +254,110 @@ spec:
 
 
 # *********************************************************************************************************************** #
-# DOACOES API                                                                                                          #       
+# DONATION WORKER API                                                                                                     #       
 # *********************************************************************************************************************** #
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: cs-doacoes-api
+  name: cs-donationworker-api-svc
   labels:
-    app: cs-doacoes-api
+    app: cs-donationworker
     project: conexao-solidaria
 spec:
   selector:
-    app: cs-doacoes-api
-  type: LoadBalancer # Modificar apos Api Gateway estar pronta
+    app: cs-donationworker
+  type: ClusterIP
   ports:
     - name: http
       port: 5003
       targetPort: 8080
+      protocol: TCP
+
+
+# *********************************************************************************************************************** #
+# NOTIFICACOES    API                                                                                                     #       
+# *********************************************************************************************************************** #
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cs-notificacoes-api-svc
+  labels:
+    app: cs-notificacoes-api
+    project: conexao-solidaria
+spec:
+  selector:
+    app: cs-notificacoes-api
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 5004
+      targetPort: 8080
+      protocol: TCP
+
+
+# *********************************************************************************************************************** #
+# GATEWAY                                                                                                                 #       
+# *********************************************************************************************************************** #
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cs-gateway-api-svc
+  labels:
+    app: cs-gateway-api
+    project: conexao-solidaria
+spec:
+  selector:
+    app: cs-gateway-api
+  type: LoadBalancer
+  ports:
+    - name: http
+      port: 5006
+      targetPort: 8080
+      protocol: TCP
+
+
+# *********************************************************************************************************************** #
+# PROMETHEUS                                                                                                              #       
+# *********************************************************************************************************************** #
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cs-prometheus-svc
+  labels:
+    app: cs-prometheus
+    project: conexao-solidaria
+spec:
+  selector:
+    app: cs-prometheus
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 9090
+      targetPort: 9090
+      protocol: TCP
+
+
+# *********************************************************************************************************************** #
+# GRAFANA                                                                                                                 #       
+# *********************************************************************************************************************** #
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cs-grafana-svc
+  labels:
+    app: cs-grafana
+    project: conexao-solidaria
+spec:
+  selector:
+    app: cs-grafana
+  type: LoadBalancer
+  ports:
+    - name: http
+      port: 3000
+      targetPort: 3000
       protocol: TCP

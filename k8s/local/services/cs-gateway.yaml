@@ -1,9 +1,9 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: cs-usuarios-api
+  name: cs-gateway-api
   labels:
-    app: cs-usuarios-api
+    app: cs-gateway-api
     project: conexao-solidaria
 spec:
   replicas: 1
@@ -14,21 +14,26 @@ spec:
       maxUnavailable: 0  # garante zero downtime
   selector:
     matchLabels:
-      app: cs-usuarios-api
+      app: cs-gateway-api
   template:
     metadata:
       labels:
-        app: cs-usuarios-api
+        app: cs-gateway-api
         project: conexao-solidaria
     spec:
       containers:
-        - name: cs-usuarios-api
-          image: cs-usuarios-api:latest
+        - name: cs-gateway-api
+          image: cs-gateway-api:latest
           # imagePullPolicy: Never → usa a imagem local buildada pelo docker-compose
           imagePullPolicy: Always
           ports:
             - name: http
               containerPort: 8080      
+
+          # ── Injeção de ConfigMaps Inteiros ──────────────────────────────
+          envFrom:
+            - configMapRef:
+                name: cs-configproxy   # <--- Puxa TODAS as rotas do Yarp e Swagger de uma vez só!
 
           # ── Variáveis ──────────────────────────────────
           env:
@@ -84,99 +89,12 @@ spec:
                   name: cs-secrets
                   key: AES_KEY
 
-            #Rabbitmq
-            - name: RabbitMq__Password
-              valueFrom:
-                secretKeyRef:
-                  name: cs-secrets
-                  key: RABBITMQ_PASSWORD
-
-            - name: RabbitMq__Username
-              valueFrom:
-                secretKeyRef:
-                  name: cs-secrets
-                  key: RABBITMQ_USERNAME
-
-            - name: RabbitMq__Host
-              valueFrom:
-                configMapKeyRef:
-                  name: cs-configmap
-                  key: RABBITMQ_SVC
-
-            #Database
-            - name: USUARIOS_DB_SVC
-              valueFrom:
-                configMapKeyRef:
-                  name: cs-configmap
-                  key: USUARIOS_DB_SVC
-            - name: USUARIOS_DB_NAME
-              valueFrom:
-                configMapKeyRef:
-                  name: cs-configmap
-                  key: USUARIOS_POSTGRES_DB
-            - name: USUARIOS_DB_PASS
-              valueFrom:
-                secretKeyRef:
-                  name: cs-secrets
-                  key: USUARIOS_POSTGRES_PASSWORD
-            - name: USUARIOS_DB_USER
-              valueFrom:
-                secretKeyRef:
-                  name: cs-secrets
-                  key: USUARIOS_POSTGRES_USER
-            - name: DYNAMODB_SERVICE_URL
-              valueFrom:
-                configMapKeyRef:
-                  name: cs-configmap
-                  key: DYNAMODB_SERVICE_URL
-            - name: REDIS_SERVICE_URL
-              valueFrom:
-                configMapKeyRef:
-                  name: cs-configmap
-                  key: REDIS_SERVICE_URL
-            - name: ELASTICSEARCH_SERVICE_URL
-              valueFrom:
-                configMapKeyRef:
-                  name: cs-configmap
-                  key: ELASTICSEARCH_SERVICE_URL
-
-            #ConnectionStrings
-            - name: ConnectionStrings__Database
-              value: "Host=$(USUARIOS_DB_SVC);Database=$(USUARIOS_DB_NAME);Username=$(USUARIOS_DB_USER);Password=$(USUARIOS_DB_PASS)"
-
-            - name: ConnectionStrings__AuditLog
-              value: $(DYNAMODB_SERVICE_URL)
-
-            - name: ConnectionStrings__Redis
-              value: $(REDIS_SERVICE_URL)
+          
 
 
-            #AWS
-            - name: AWS_ACCESS_KEY_ID
-              valueFrom:
-                configMapKeyRef:
-                  name: cs-configmap
-                  key: AWS_ACCESS_KEY_ID
 
-            - name: AWS_SECRET_ACCESS_KEY
-              valueFrom:
-                configMapKeyRef:
-                  name: cs-configmap
-                  key: AWS_SECRET_ACCESS_KEY
 
-            - name: AWS_DEFAULT_REGION
-              valueFrom:
-                configMapKeyRef:
-                  name: cs-configmap
-                  key: AWS_DEFAULT_REGION
-
-            - name: AWS_DYNAMODB_SERVICE_URL
-              valueFrom:
-                configMapKeyRef:
-                  name: cs-configmap
-                  key: DYNAMODB_SERVICE_URL
-
-             #Logs
+          #Logs
             - name: CustomLogging__LogInfo
               valueFrom:
                 configMapKeyRef:

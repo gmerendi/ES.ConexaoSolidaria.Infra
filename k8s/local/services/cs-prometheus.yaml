@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cs-prometheus
+  labels:
+    app: cs-prometheus
+    project: conexao-solidaria
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1        # sobe 1 pod novo antes de derrubar o antigo
+      maxUnavailable: 0  # garante zero downtime
+  selector:
+    matchLabels:
+      app: cs-prometheus
+  template:
+    metadata:
+      labels:
+        app: cs-prometheus
+    spec:
+      containers:
+        - name: prometheus
+          image: prom/prometheus:v2.53.0
+          ports:
+            - containerPort: 9090
+              name: web
+          args:
+            - "--config.file=/etc/prometheus/prometheus.yml"
+            - "--storage.tsdb.path=/prometheus"
+            - "--storage.tsdb.retention.time=15d"
+            - "--web.enable-lifecycle"
+          
+          # ── Liveness e Readiness baseados no Healthcheck do Compose ────────
+          livenessProbe:
+            httpGet:
+              path: /-/healthy
+              port: 9090
+            initialDelaySeconds: 15
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /-/healthy
+              port: 9090
+            initialDelaySeconds: 15
+            periodSeconds: 10
+
+          # ── Mapeamento de Volumes (Configuração e Dados) ───────────────────
+          volumeMounts:
+            - name: config-volume
+              mountPath: /etc/prometheus/
+            - name: storage-volume
+              mountPath: /prometheus
+      
+      volumes:
+        - name: config-volume
+          configMap:
+            name: cs-observability-config # Nome do ConfigMap unificado
+            items:
+              - key: prometheus.yml       # Pega apenas esta chave
+                path: prometheus.yml
+        - name: storage-volume
+          emptyDir: {}
