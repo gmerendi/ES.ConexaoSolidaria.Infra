@@ -427,3 +427,10 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+terraform.exe

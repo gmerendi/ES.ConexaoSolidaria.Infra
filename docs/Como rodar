@@ -1,9 +1,24 @@
+AWS
+
+1. Configurar conta AWS
+aws configure 
+
+2. Aplicar Terraform
+.\terraform apply
+
+
+
+
+
 DOCKER COMPOSE
 1. Abrir terminal na pasta docker-compose e rodar o comando:
 docker-compose up -- build
 
 2. Para deletar
 docker-compose down -v
+
+
+
 
 
 KUBERNETES
