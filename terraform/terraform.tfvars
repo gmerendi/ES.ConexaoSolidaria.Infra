@@ -1,0 +1,15 @@
+# Copie este arquivo para terraform.tfvars e preencha
+region         	= "us-east-1"
+account_id	= "641008666847"
+
+
+# AWS Academy: IAM > Roles > LabRole > copie o ARN
+role_arn = "arn:aws:iam::641008666847:role/LabRole"
+
+# Mailtrap
+mailtrap_api_token	= "dcdc3fc61fc6e831ad3d3cdf176bf193"
+mailtrap_inbox_id	= "4421784"
+admin_email		= "postech.grupo39@gmail.com"
+
+# Geral
+services_public_accessible	= true
