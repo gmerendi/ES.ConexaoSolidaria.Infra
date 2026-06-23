@@ -13,6 +13,9 @@ data:
   #Gateway
   Gateway__BaseUrl: "http://cs-gateway-api-svc:5006"
 
+  #FrontEnd
+  FRONTEND_URL: "http://localhost:5000"
+
   #Swagger
   Swagger__Endpoints__0__Id: "usuarios"
   Swagger__Endpoints__0__Url: "http://cs-usuarios-api-svc:5001/swagger/v1/swagger.json"
