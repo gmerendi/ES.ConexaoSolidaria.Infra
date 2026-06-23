@@ -447,10 +447,13 @@ services:
       RateLimiting__WindowSeconds: "60"
 
       #Gateway
-      Gateway__BaseUrl: "http://localhost:5000"
+      Gateway__BaseUrl: "http://localhost:5006"
 
       #Configuration
       Application__Type: "LOCAL"
+
+      #FrontEnd
+      FRONTEND_URL: "http://localhost:5000"
 
       #Swagger
       Swagger__Endpoints__0__Id: "usuarios"
