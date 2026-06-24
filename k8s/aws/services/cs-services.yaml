@@ -1,0 +1,79 @@
+# *********************************************************************************************************************** #
+# RABBITMQ                                                                                                                #       
+# *********************************************************************************************************************** #
+apiVersion: v1
+kind: Service
+metadata:
+  name: cs-rabbitmq-amqp-svc
+  labels:
+    app: cs-rabbitmq
+    project: conexao-solidaria
+spec:
+  type: ClusterIP
+  selector:
+    app: cs-rabbitmq
+  ports:
+    - name: amqp
+      port: 5672
+      targetPort: 5672
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cs-rabbitmq-manag-svc
+  labels:
+    app: cs-rabbitmq
+    project: conexao-solidaria
+spec:
+  type: LoadBalancer
+  selector:
+    app: cs-rabbitmq
+  ports:
+    - name: management
+      port: 15672
+      targetPort: 15672
+
+
+
+# *********************************************************************************************************************** #
+# USUARIOS API                                                                                                            #       
+# *********************************************************************************************************************** #
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cs-usuarios-api-svc
+  labels:
+    app: cs-usuarios-api
+    project: conexao-solidaria
+spec:
+  selector:
+    app: cs-usuarios-api
+  type: LoadBalancer
+  ports:
+    - name: http
+      port: 5001
+      targetPort: 8080
+      protocol: TCP
+
+
+# *********************************************************************************************************************** #
+# CAMPANHAS API                                                                                                           #       
+# *********************************************************************************************************************** #
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cs-campanhas-api-svc
+  labels:
+    app: cs-campanhas-api
+    project: conexao-solidaria
+spec:
+  selector:
+    app: cs-campanhas-api
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 5002
+      targetPort: 8080
+      protocol: TCP

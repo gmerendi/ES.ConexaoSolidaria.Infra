@@ -1,0 +1,115 @@
+﻿apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cs-rabbitmq
+  labels:
+    app: cs-rabbitmq
+    project: conexao-solidaria
+spec:
+  replicas: 1
+  # RabbitMQ single-node usa Recreate: garante que o PVC (ReadWriteOnce)
+  # seja liberado antes de subir o novo pod
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: cs-rabbitmq
+  template:
+    metadata:
+      labels:
+        app: cs-rabbitmq
+        project: conexao-solidaria
+    spec:
+      containers:
+        - name: cs-rabbitmq
+          image: rabbitmq:4.1.6-management-alpine
+          ports:
+            - name: amqp
+              containerPort: 5672
+            - name: management
+              containerPort: 15672
+
+          # ── Variáveis de ambiente ──────────────────────────────────────────
+          env:
+            # Não-sensíveis: vêm do ConfigMap
+            - name: RABBITMQ_DEFAULT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: cs-secrets
+                  key: RABBITMQ_USERNAME
+
+            - name: RABBITMQ_DEFAULT_VHOST
+              valueFrom:
+                configMapKeyRef:
+                  name: cs-configmap
+                  key: RABBITMQ_HOST
+
+            # Sensível: vem do Secret
+            - name: RABBITMQ_DEFAULT_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: cs-secrets
+                  key: RABBITMQ_PASSWORD
+
+          # ── Recursos ──────────────────────────────────────────────────────
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+
+          # ── Liveness Probe ────────────────────────────────────────────────
+          # Verifica se o RabbitMQ está vivo.
+          # Se falhar: Kubernetes reinicia o container.
+          # Equivalente ao healthcheck do docker-compose.
+          livenessProbe:
+            exec:
+              command:
+                - rabbitmq-diagnostics
+                - "-q"
+                - ping
+            initialDelaySeconds: 30   # aguarda o boot completo do RabbitMQ
+            periodSeconds: 30
+            timeoutSeconds: 30
+            failureThreshold: 3
+            successThreshold: 1
+
+          # ── Readiness Probe ───────────────────────────────────────────────
+          # Verifica se o RabbitMQ está pronto para receber conexões.
+          # Se falhar: o pod sai do balanceador (Service), mas NÃO é reiniciado.
+          # Mais restritivo que o liveness: verifica o status do nó inteiro.
+          readinessProbe:
+            exec:
+              command:
+                - rabbitmq-diagnostics
+                - "-q"
+                - check_running
+            initialDelaySeconds: 20
+            periodSeconds: 15
+            timeoutSeconds: 15
+            failureThreshold: 3
+            successThreshold: 1
+
+          # ── Volumes montados no container ─────────────────────────────────
+          volumeMounts:
+            - name: rabbitmq-data
+              mountPath: /var/lib/rabbitmq
+            - name: rabbitmq-plugins
+              mountPath: /etc/rabbitmq/enabled_plugins
+              subPath: enabled_plugins   # monta apenas o arquivo, não a pasta
+
+      # ── Volumes ─────────────────────────────────────────────────────────────
+      volumes:
+        - name: rabbitmq-data
+          persistentVolumeClaim:
+            claimName: cs-rabbitmq-pvc
+
+        # ConfigMap montado como arquivo para ativar os plugins
+        - name: rabbitmq-plugins
+          configMap:
+            name: cs-configmap
+            items:
+              - key: enabled_plugins
+                path: enabled_plugins
