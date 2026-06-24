@@ -9,7 +9,7 @@ role_arn = "arn:aws:iam::641008666847:role/LabRole"
 # Mailtrap
 mailtrap_api_token	= "dcdc3fc61fc6e831ad3d3cdf176bf193"
 mailtrap_inbox_id	= "4421784"
-admin_email		= "postech.grupo39@gmail.com"
+admin_email		= "gmerendi@hotmail.com"
 
 # Geral
 services_public_accessible	= true

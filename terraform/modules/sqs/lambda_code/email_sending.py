@@ -50,7 +50,8 @@ def process_user_created(message_body):
     data = json.loads(message_body) if isinstance(message_body, str) else message_body
     
     email = data.get('email')
-    nome  = data.get('nomeCompleto', 'Doador')
+    nome  = data.get('nome', 'Doador')
+    cpf  = data.get('cpf', 'Doador')
     corr_id = data.get('correlationId', 'N/A')
 
     if not email:
@@ -58,9 +59,12 @@ def process_user_created(message_body):
 
     subject = "Bem-vindo ao Portal Conexão Solidária"
     message_text = f"""
-Olá, {nome}! 🚀
+Olá, {nome}!
 
-Você é um novo doador!
+Seu usuário foi criado em nosso sistema com o cpf: {cpf}!
+Utilize seu e-mail como login.
+Verifique as campanhas ativas em nosso site acessando: https://www.conexaosolidaria.com.br
+
 
 
 Atenciosamente,

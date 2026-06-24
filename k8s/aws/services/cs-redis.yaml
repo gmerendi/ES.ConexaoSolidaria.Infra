@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cs-redis
+  labels:
+    app: cs-redis
+    project: conexao-solidaria
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: cs-redis
+  template:
+    metadata:
+      labels:
+        app: cs-redis
+        project: conexao-solidaria
+    spec:
+      containers:
+        - name: cs-redis
+          image: redis:alpine
+          ports:
+            - name: redis
+              containerPort: 6379
+
+          # ── Recursos ────────────────────────────────────────────────────
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "250m"
+              memory: "256Mi"
+
+          # ── Liveness Probe ───────────────────────────────────────────────
+          # redis-cli ping retorna PONG quando o servidor está vivo
+          livenessProbe:
+            exec:
+              command:
+                - redis-cli
+                - ping
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+            successThreshold: 1
+
+          # ── Readiness Probe ──────────────────────────────────────────────
+          # Mesmo comando, intervalo menor — garante que o pod só entra no
+          # Service quando o Redis já está aceitando conexões
+          readinessProbe:
+            exec:
+              command:
+                - redis-cli
+                - ping
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+            successThreshold: 1
+
+          # ── Volume ───────────────────────────────────────────────────────
+          volumeMounts:
+            - name: cs-redis-data
+              mountPath: /data
+
+      volumes:
+        - name: cs-redis-data
+          persistentVolumeClaim:
+            claimName: cs-redis-pvc

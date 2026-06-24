@@ -1,0 +1,61 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cs-configmap
+  labels:
+    name: cs-configmap
+data: 
+  #RabbitMq
+  RABBITMQ_HOST: "/"
+  RABBITMQ_SVC: cs-rabbitmq-amqp-svc
+  RABBITMQ_ENABLED_PLUGINS_FILE: "/etc/rabbitmq/enabled_plugins"
+  enabled_plugins: "[rabbitmq_management,rabbitmq_prometheus]."
+  RABBITMQ_DONATION_CREATED_QUEUE: "cs-donation-created-queue"
+  RABBITMQ_DONATION_PROCESSED_QUEUE: "cs-donation_processed-queue"
+  RABBITMQ_USER_CREATED_QUEUE: "cs-user-created-queue"
+  
+
+  #Usuarios
+  USUARIOS_DB_SVC: cs-postgres-db.cmdyd5viasmx.us-east-1.rds.amazonaws.com
+  USUARIOS_POSTGRES_DB: "cs-usuarios"
+
+  #Campanhas
+  CAMPANHAS_DB_SVC: cs-postgres-db.cmdyd5viasmx.us-east-1.rds.amazonaws.com
+  CAMPANHAS_POSTGRES_DB: "cs-campanhas"
+
+  #DynamoDB
+  DYNAMODB_SERVICE_URL: "https://dynamodb.us-east-1.amazonaws.com"
+  DYNAMODB_SVC: cs-dynamo-db
+
+  #Aws
+  AWS_REGION: "us-east-1"
+
+  #Redis
+  REDIS_SERVICE_URL: "cs-redis.641008666847.0001.use1.cache.amazonaws.com:6379"
+  CACHE_CAMPANHA_ATIVA_TTL_SECONDS: "60"
+  CACHE_CAMPANHA_NAO_ATIVA_TTL_SECONDS: "86400"
+
+  #ElasticSearch
+  DISCOVERY_TYPE: "single-node"
+  XPACK_SECURITY_ENABLED: "false"
+  XPACK_SECURITY_HTTP_SSL_ENABLED: "false"
+  ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+  ELASTICSEARCH_SERVICE_URL: "http://cs-elasticsearch:9200"
+
+  #MailPit
+  EMAIL_SMTP_HOST: "cs-mailpit-svc"
+  EMAIL_SMTP_PORT: "1025"
+  EMAIL_REMETENTE: "Conexao Solidaria"
+  EMAIL_EMAIL_REMETENTE: "noreply@conexao-solidaria.com.br"
+
+  #.NetCore
+  ASPNETCORE_ENVIRONMENT: Development
+  ASPNETCORE_URLS: http://+:8080
+
+  #Variables
+  #Type - LOCAL - local kubernetes | LAB = AWS Lab
+  APPLICATION_TYPE: "LAB"
+  CUSTOMLOGGING_LOGINFO: "True"
+  CUSTOMLOGGING_LOGWARNING: "True"
+  CUSTOMLOGGING_LOGERROR: "True"
+  CUSTOMLOGGING_SENDLOGTODB: "True"

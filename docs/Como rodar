@@ -1,15 +1,3 @@
-AWS
-
-1. Configurar conta AWS
-aws configure 
-
-2. Aplicar Terraform
-.\terraform apply
-
-
-
-
-
 DOCKER COMPOSE
 1. Abrir terminal na pasta docker-compose e rodar o comando:
 docker-compose up -- build
@@ -17,6 +5,40 @@ docker-compose up -- build
 2. Para deletar
 docker-compose down -v
 
+
+
+AWS
+1. Configurar conta AWS
+aws configure 
+
+2. Aplicar Terraform
+.\terraform apply
+
+3. Subir Imagens docker
+ aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 641008666847.dkr.ecr.us-east-1.amazonaws.com
+
+ docker tag cs-usuarios-api:latest 641008666847.dkr.ecr.us-east-1.amazonaws.com/cs-usuarios-api:latest
+
+ docker push 641008666847.dkr.ecr.us-east-1.amazonaws.com/cs-usuarios-api:latest
+
+
+ 4. Conectar o Kubernetes
+ aws eks update-kubeconfig --region us-east-1 --name cs-cluster
+
+ 5. Inserir os dados de conta no 
+
+
+ 5. Abrir Terminal na raiz
+ kubectl apply -f k8s/aws/services/cs-aws-credentials.yaml
+ kubectl apply -f k8s/aws/services/cs-aws-accounts.yaml
+ kubectl apply -f k8s/aws/services/cs-configmap.yaml
+ kubectl apply -f k8s/aws/services/cs-secrets.yaml
+ kubectl apply -f k8s/aws/services/cs-redis.yaml
+ kubectl apply -f k8s/aws/services/cs-services.yaml
+ kubectl apply -f k8s/aws/services/cs-volumes.yaml
+ kubectl apply -f k8s/aws/services/cs-rabbitmq.yaml
+
+ kubectl apply -f k8s/aws/services/cs-usuarios.yaml
 
 
 
@@ -65,6 +87,7 @@ kubectl create configmap cs-grafana-donation-dash --from-file=donationworker.jso
  kubectl apply -f k8s/local/services/cs-grafana.yaml
 
 
+ 
 
 
  6. Para deletar
