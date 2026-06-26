@@ -27,6 +27,18 @@ variable "image_version_qty" {
   default     = 1
 }
 
+variable "usuarios_api_elb" {
+  description = "DNS do NLB interno da Usuarios API (kubectl get svc)"
+  type        = string
+  default     = "ab5930a0da09b4ab4a5876a03318063a-6990d8db0e3d4055.elb.us-east-1.amazonaws.com"
+}
+
+variable "campanhas_api_elb" {
+  description = "DNS do NLB interno da Campanhas API (kubectl get svc)"
+  type        = string
+  default     = "af80e018bb0024da6976b14925cca7d7-18c5cf56709e06d1.elb.us-east-1.amazonaws.com"
+}
+
 
 
 

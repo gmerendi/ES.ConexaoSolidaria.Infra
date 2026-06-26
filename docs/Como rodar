@@ -63,6 +63,7 @@ docker-compose build
  kubectl delete -f k8s/aws/services/cs-usuarios.yaml
  kubectl delete -f k8s/aws/services/cs-campanhas.yaml
  kubectl delete -f k8s/aws/services/cs-donationworker.yaml
+ 
 
 
  kubectl delete -f k8s/aws/services/cs-aws-credentials.yaml
