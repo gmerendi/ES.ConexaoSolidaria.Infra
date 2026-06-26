@@ -1,9 +1,9 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: cs-campanhas-api
+  name: cs-donationworker
   labels:
-    app: cs-campanhas-api
+    app: cs-donationworker
     project: conexao-solidaria
 spec:
   replicas: 1
@@ -14,21 +14,21 @@ spec:
       maxUnavailable: 0  # garante zero downtime
   selector:
     matchLabels:
-      app: cs-campanhas-api
+      app: cs-donationworker
   template:
     metadata:
       labels:
-        app: cs-campanhas-api
+        app: cs-donationworker
         project: conexao-solidaria
     spec:
       containers:
-        - name: cs-campanhas-api
-          image: 641008666847.dkr.ecr.us-east-1.amazonaws.com/cs-campanhas-api:latest
+        - name: cs-donationworker
+          image: 641008666847.dkr.ecr.us-east-1.amazonaws.com/cs-donationworker-api:latest
           # imagePullPolicy: Never → usa a imagem local buildada pelo docker-compose
           imagePullPolicy: Always
           ports:
             - name: http
-              containerPort: 8080      
+              containerPort: 8080
 
           # ── Variáveis ──────────────────────────────────
           env:
@@ -101,24 +101,17 @@ spec:
                   name: cs-configmap
                   key: RABBITMQ_SVC
 
-            - name: DONATION_CREATED_QUEUE
+            - name: QUEUES__DONATION_CREATED_QUEUE
               valueFrom:
                 configMapKeyRef:
                   name: cs-configmap
                   key: RABBITMQ_DONATION_CREATED_QUEUE
 
-            #Cache
-            - name: Cache__CampanhaAtivaTTLSeconds
+            - name: DONATION_PROCESSED_QUEUE
               valueFrom:
                 configMapKeyRef:
                   name: cs-configmap
-                  key: CACHE_CAMPANHA_ATIVA_TTL_SECONDS
-
-            - name: Cache__CampanhaNaoAtivaTTLSeconds
-              valueFrom:
-                configMapKeyRef:
-                  name: cs-configmap
-                  key: CACHE_CAMPANHA_NAO_ATIVA_TTL_SECONDS
+                  key: RABBITMQ_DONATION_PROCESSED_QUEUE
 
             #Database
             - name: CAMPANHAS_DB_SVC
@@ -157,7 +150,6 @@ spec:
                   name: cs-configmap
                   key: ELASTICSEARCH_SERVICE_URL
 
-
             #ConnectionStrings
             - name: ConnectionStrings__Database
               value: "Host=$(CAMPANHAS_DB_SVC);Database=$(CAMPANHAS_DB_NAME);Username=$(CAMPANHAS_DB_USER);Password=$(CAMPANHAS_DB_PASS)"
@@ -171,8 +163,7 @@ spec:
             - name: ConnectionStrings__ElasticSearch
               value: $(ELASTICSEARCH_SERVICE_URL)
 
-
-            #Logs
+             #Logs
             - name: CustomLogging__LogInfo
               valueFrom:
                 configMapKeyRef:
@@ -219,10 +210,9 @@ spec:
           # ── Liveness Probe ───────────────────────────────────────────────
           # Se falhar: Kubernetes reinicia o container
           livenessProbe:
-            httpGet:
-              path: /health/live
+            tcpSocket:
               port: 8080
-            initialDelaySeconds: 60
+            initialDelaySeconds: 20
             periodSeconds: 20
             timeoutSeconds: 5
             failureThreshold: 3
@@ -231,10 +221,9 @@ spec:
           # ── Readiness Probe ──────────────────────────────────────────────
           # Se falhar: pod sai do Service até estar pronto
           readinessProbe:
-            httpGet:
-              path: /health/ready
+            tcpSocket:
               port: 8080
-            initialDelaySeconds: 30
+            initialDelaySeconds: 20
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 3

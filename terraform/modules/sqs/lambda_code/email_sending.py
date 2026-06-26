@@ -82,7 +82,7 @@ def process_donation_processed(message_body):
     
     email     = data.get('email')
     user_name = data.get('userName', 'Doador')
-    campaign_name = data.get('campanhaTitulo', 'Titulo')
+    campaign_title = data.get('tituloCampanha', 'Titulo')
     valor = data.get('valor', '0')
     corr_id   = data.get('correlationId', 'N/A')
 
@@ -94,7 +94,7 @@ def process_donation_processed(message_body):
     message_text = f"""
 Ola, "{user_name}"!
 
-Sua doação de  "{valor}" foi confirmada para a "{campanhaTitulo}". 
+Sua doação de  "{valor}" reais foi confirmada para a campanha "{campaign_title}". 
 
 Obrigado por fazer a diferença!
 
@@ -124,7 +124,7 @@ def handler(event, context):
             if 'user-created' in queue_arn.lower():
                 process_user_created(body)
             elif 'donation-processed' in queue_arn.lower():
-                process_game_purchased(body)
+                process_donation_processed(body)
             else:
                 print(f"⚠️ Fila desconhecida: {queue_arn}")
 
