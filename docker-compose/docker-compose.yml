@@ -556,6 +556,20 @@ services:
       retries: 3
 
 
+  ###########################################################################
+  # ZABBIX
+  ###########################################################################
+  cs.zabbix:
+    image: zabbix/zabbix-appliance:alpine-latest
+    container_name: cs-zabbix
+    ports:
+      - "8086:80"
+      - "10051:10051"
+    networks:
+      - csnetwork
+    restart: unless-stopped
+
+
 
   ###########################################################################
   # GRAFANA

@@ -172,6 +172,27 @@ module "messaging" {
 #           ame_to_library_queue_url
 
 
+############################################################################
+# API Gateway
+############################################################################
+module "apigw" {
+   source = "./modules/apigw"
 
+   environment       = var.environment
+   project_prefix    = var.project_prefix
+   project_name      = var.project_name
+
+   # VPC Link
+   private_subnet_ids = module.network.private_subnet_ids
+   vpc_link_sg_id     = module.eks.cluster_security_group_id
+
+   # URLs dos ELBs — pegue com: kubectl get svc
+   usuarios_api_elb    = var.usuarios_api_elb
+   campanhas_api_elb  = var.campanhas_api_elb
+
+   # Rate Limiting
+   rate_limit_rate  = 100
+   rate_limit_burst = 200
+}
 
 
