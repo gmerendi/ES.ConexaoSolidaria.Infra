@@ -1,10 +1,10 @@
 # *********************************************************************************************************************** #
-# RABBITMQ                                                                                                                #       
+# VOLUME                                                                                                                #       
 # *********************************************************************************************************************** #
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: cs-rabbitmq-pv
+  name: cs-volume
 spec:
   capacity:
     storage: 1Gi
@@ -16,14 +16,17 @@ spec:
     path: "/mnt/data"
 
 
+# *********************************************************************************************************************** #
+# ELASTICSEARCH                                                                                                           #       
+# *********************************************************************************************************************** #
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: cs-rabbitmq-pvc
+  name: cs-elasticsearch-pvc
 spec:
   storageClassName: ""
-  volumeName: cs-rabbitmq-pv
+  volumeName: cs-volume
   accessModes:
     - ReadWriteOnce
   resources:

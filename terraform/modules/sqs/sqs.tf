@@ -28,10 +28,28 @@ resource "aws_sqs_queue" "user_created_dlq" {
 
 
 ############################################################################
+# FILA PARA EMAIL DE DOACAO CRIADA 
+############################################################################
+resource "aws_sqs_queue" "donation_created_queue" {
+  name                       = "${local.name_prefix}-donation-created-queue"
+  visibility_timeout_seconds = 60
+
+  redrive_policy = jsonencode({
+    deadLetterTargetArn = aws_sqs_queue.donation_created_dlq.arn
+    maxReceiveCount     = 3
+  })
+}
+
+resource "aws_sqs_queue" "donation_created_dlq" {
+  name = "${local.name_prefix}-donation-created-dlq"
+}
+
+
+############################################################################
 # FILA PARA EMAIL DE DOACAO PROCESSADA 
 ############################################################################
 resource "aws_sqs_queue" "donation_processed_queue" {
-  name                       = "${local.name_prefix}-donation_processed-queue"
+  name                       = "${local.name_prefix}-donation-processed-queue"
   visibility_timeout_seconds = 60
 
   redrive_policy = jsonencode({
@@ -41,7 +59,7 @@ resource "aws_sqs_queue" "donation_processed_queue" {
 }
 
 resource "aws_sqs_queue" "donation_processed_dlq" {
-  name = "${local.name_prefix}-donation_processed-dlq"
+  name = "${local.name_prefix}-donation-processed-dlq"
 }
 
 

@@ -1,38 +1,27 @@
 # *********************************************************************************************************************** #
-# RABBITMQ                                                                                                                #       
+# ELASTICSEARCH                                                                                                           #       
 # *********************************************************************************************************************** #
-apiVersion: v1
-kind: Service
-metadata:
-  name: cs-rabbitmq-amqp-svc
-  labels:
-    app: cs-rabbitmq
-    project: conexao-solidaria
-spec:
-  type: ClusterIP
-  selector:
-    app: cs-rabbitmq
-  ports:
-    - name: amqp
-      port: 5672
-      targetPort: 5672
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: cs-rabbitmq-manag-svc
+  name: cs-elasticsearch
   labels:
-    app: cs-rabbitmq
+    app: cs-elasticsearch
     project: conexao-solidaria
 spec:
-  type: LoadBalancer
   selector:
-    app: cs-rabbitmq
+    app: cs-elasticsearch
+  type: ClusterIP
   ports:
-    - name: management
-      port: 15672
-      targetPort: 15672
-
+    - name: http
+      port: 9200
+      targetPort: 9200
+      protocol: TCP
+    - name: transport
+      port: 9300
+      targetPort: 9300
+      protocol: TCP
 
 
 # *********************************************************************************************************************** #
@@ -71,9 +60,31 @@ metadata:
 spec:
   selector:
     app: cs-campanhas-api
-  type: ClusterIP
+  type: LoadBalancer
   ports:
     - name: http
       port: 5002
+      targetPort: 8080
+      protocol: TCP
+
+
+# *********************************************************************************************************************** #
+# DONATION WORKER API                                                                                                     #       
+# *********************************************************************************************************************** #
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cs-donationworker-api-svc
+  labels:
+    app: cs-donationworker
+    project: conexao-solidaria
+spec:
+  selector:
+    app: cs-donationworker
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 5003
       targetPort: 8080
       protocol: TCP
