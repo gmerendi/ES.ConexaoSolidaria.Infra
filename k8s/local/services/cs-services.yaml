@@ -342,6 +342,64 @@ spec:
 
 
 # *********************************************************************************************************************** #
+# ZABBIX                                                                                                                  #       
+# *********************************************************************************************************************** #
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cs-zabbix-svc
+  labels:
+    app: cs-zabbix
+    project: conexao-solidaria
+spec:
+  type: ClusterIP
+  selector:
+    app: cs-zabbix
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+    - name: trapper
+      port: 10051
+      targetPort: 10051
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cs-zabbix-manag-svc
+  labels:
+    app: cs-zabbix
+    project: conexao-solidaria
+spec:
+  type: LoadBalancer
+  selector:
+    app: cs-zabbix
+  ports:
+    - name: management
+      port: 8086
+      targetPort: 80
+
+
+# Agent
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cs-zabbix-agent-svc
+  labels:
+    app: cs-zabbix-agent
+    project: conexao-solidaria
+spec:
+  selector:
+    app: cs-zabbix-agent
+  ports:
+    - name: agent
+      port: 10050
+      targetPort: 10050
+  type: ClusterIP
+
+# *********************************************************************************************************************** #
 # GRAFANA                                                                                                                 #       
 # *********************************************************************************************************************** #
 ---
@@ -361,3 +419,4 @@ spec:
       port: 3000
       targetPort: 3000
       protocol: TCP
+

@@ -35,6 +35,11 @@ spec:
               value: "fiap123"
             - name: GF_USERS_ALLOW_SIGN_UP
               value: "false"
+            - name: GF_INSTALL_PLUGINS
+              value: "alexanderzobnin-zabbix-app 4.4.5"
+            - name: GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS
+              value: "alexanderzobnin-zabbix-app,alexanderzobnin-zabbix-datasource,alexanderzobnin-zabbix-triggers-panel"
+
 
           # ── Sondas de Saúde (Baseadas no Healthcheck do Compose) ──────────
           livenessProbe:
@@ -79,6 +84,10 @@ spec:
               mountPath: /var/lib/grafana/dashboards/donationworker.json
               subPath: donationworker.json
 
+            - name: zabbix-dash-volume
+              mountPath: /var/lib/grafana/dashboards/zabbix.json
+              subPath: zabbix.json
+
       # ── Declaração dos Volumes do Cluster ──────────────────────────────────
       volumes:
         # Puxa os arquivos estruturais (Datasource e Provider) 
@@ -106,3 +115,7 @@ spec:
         - name: donation-dash-volume
           configMap:
             name: cs-grafana-donation-dash
+
+        - name: zabbix-dash-volume
+          configMap:
+            name: cs-grafana-zabbix-dash
