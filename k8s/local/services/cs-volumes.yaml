@@ -19,103 +19,6 @@ spec:
     path: "/mnt/data"
 
 
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: cs-rabbitmq-pvc
-  labels:
-    app: rabbitmq
-    project: conexao-solidaria
-spec:
-  storageClassName: ""
-  volumeName: cs-rabbitmq-pv
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 50Mi
-
-
-# *********************************************************************************************************************** #
-# USUARIOS-DB                                                                                                             #       
-# *********************************************************************************************************************** #
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: cs-usuarios-db-pvc
-  labels:
-    app: cs-usuarios-db-pvc
-    project: conexao-solidaria
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 50Mi
-  # storageClassName: standard
-
-
-
-# *********************************************************************************************************************** #
-# CAMPANHAS-DB                                                                                                             #       
-# *********************************************************************************************************************** #
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: cs-campanhas-db-pvc
-  labels:
-    app: cs-campanhas-db-pvc
-    project: conexao-solidaria
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 50Mi
-  # storageClassName: standard
-
-
-# *********************************************************************************************************************** #
-# DOACOES-DB                                                                                                             #       
-# *********************************************************************************************************************** #
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: cs-doacoes-db-pvc
-  labels:
-    app: cs-doacoes-db-pvc
-    project: conexao-solidaria
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 50Mi
-  # storageClassName: standard
-
-
-# *********************************************************************************************************************** #
-# REDIS                                                                                                           #       
-# *********************************************************************************************************************** #
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: cs-redis-pvc
-  labels:
-    app: cs-redis-pvc
-    project: conexao-solidaria
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 50Mi
-  # storageClassName: standard
 
 
 # *********************************************************************************************************************** #
@@ -130,16 +33,17 @@ metadata:
     app: cs-elasticsearch-pvc
     project: conexao-solidaria
 spec:
+  storageClassName: ""
+  volumeName: cs-pv
   accessModes:
     - ReadWriteOnce
   resources:
     requests:
       storage: 50Mi
-  # storageClassName: standard
 
 
 # *********************************************************************************************************************** #
-# ZABBIX                                                                                                           #       
+# ZABBIX                                                                                                                  #       
 # *********************************************************************************************************************** #
 ---
 apiVersion: v1
@@ -150,9 +54,10 @@ metadata:
     app: cs-zabbix-pvc
     project: conexao-solidaria
 spec:
+  storageClassName: ""
+  volumeName: cs-pv
   accessModes:
     - ReadWriteOnce
   resources:
     requests:
       storage: 50Mi
-  # storageClassName: standard

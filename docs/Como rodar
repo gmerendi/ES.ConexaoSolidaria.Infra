@@ -39,9 +39,12 @@ docker-compose build
 
 
  6. Abrir Terminal na raiz
+
  kubectl apply -f k8s/aws/services/cs-aws-credentials.yaml
  kubectl apply -f k8s/aws/services/cs-aws-accounts.yaml
  kubectl apply -f k8s/aws/services/cs-configmap.yaml
+ kubectl apply -f k8s/aws/services/cs-configzabbix.yaml
+ kubectl apply -f k8s/aws/services/cs-configobs.yaml
  kubectl apply -f k8s/aws/services/cs-secrets.yaml
  kubectl apply -f k8s/aws/services/cs-services.yaml
  kubectl apply -f k8s/aws/services/cs-volumes.yaml
@@ -55,6 +58,11 @@ docker-compose build
  kubectl apply -f k8s/aws/services/cs-campanhas.yaml
  kubectl apply -f k8s/aws/services/cs-donationworker.yaml
 
+ kubectl apply -f k8s/aws/services/cs-zabbix.yaml
+ kubectl apply -f k8s/aws/services/cs-prometheus.yaml
+ kubectl apply -f k8s/aws/services/cs-grafana.yaml
+ 
+ 7. Dar deploy no Api Gateway
 
  kubectl get svc
 
@@ -69,6 +77,7 @@ docker-compose build
  kubectl delete -f k8s/aws/services/cs-aws-credentials.yaml
  kubectl delete -f k8s/aws/services/cs-aws-accounts.yaml
  kubectl delete -f k8s/aws/services/cs-configmap.yaml
+ kubectl delete -f k8s/aws/services/cs-configzabbix.yaml
  kubectl delete -f k8s/aws/services/cs-secrets.yaml
  kubectl delete -f k8s/aws/services/cs-services.yaml
  kubectl delete -f k8s/aws/services/cs-volumes.yaml

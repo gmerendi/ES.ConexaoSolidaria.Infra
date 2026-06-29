@@ -32,3 +32,23 @@ spec:
   resources:
     requests:
       storage: 50Mi
+
+
+# *********************************************************************************************************************** #
+# ZABBIX                                                                                                           #       
+# *********************************************************************************************************************** #
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: cs-zabbix-pvc
+  labels:
+    app: cs-zabbix-pvc
+    project: conexao-solidaria
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Mi
+  # storageClassName: standard

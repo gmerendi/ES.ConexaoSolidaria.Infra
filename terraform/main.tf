@@ -1,9 +1,9 @@
-data "aws_caller_identity" "current" {}
+Ôªødata "aws_caller_identity" "current" {}
 ############################################################################
 # Secret Manager - Deve ser apagado na entrega.
 ############################################################################
 resource "aws_secretsmanager_secret" "rds_secret" {
-  name              = "${var.project_prefix}-rds-secret-${var.account_id}" # Com ID para evitar erro de nome j· usado no Lab
+  name              = "${var.project_prefix}-rds-secret-${var.account_id}" # Com ID para evitar erro de nome j√° usado no Lab
   description       = "Credenciais do banco de dados RDS"
   
   # Importante para o Lab: permite deletar e recriar sem esperar 7 dias
@@ -134,7 +134,7 @@ module "eks" {
   subnet_ids        = module.network.subnet_ids
   region            = var.region
   role_arn			= var.role_arn
-  node_instance     = "t3.medium"
+  node_instance     = "t3.large"
 }
 # Saidas:
 #		   cluster_name
@@ -151,14 +151,14 @@ module "eks" {
 module "messaging" {
   source = "./modules/sqs"
 
-  # Vari·veis necess·rias para a Lambda
+  # Vari√°veis necess√°rias para a Lambda
   environment       = var.environment
   sender_email      = "notificacao@fiapcloudgames.com.br" 
   region            = var.region
   project_name	    = var.project_name
   project_prefix    = var.project_prefix
 
-  # Vari·veis do Mailtrap
+  # Vari√°veis do Mailtrap
   mailtrap_api_token = var.mailtrap_api_token
   mailtrap_inbox_id  = var.mailtrap_inbox_id
   admin_email        = var.admin_email
@@ -176,6 +176,7 @@ module "messaging" {
 # API Gateway
 ############################################################################
 module "apigw" {
+   count  = var.deploy_apigw ? 1 : 0  # ‚Üê s√≥ da deploy se for true
    source = "./modules/apigw"
 
    environment       = var.environment
@@ -186,7 +187,7 @@ module "apigw" {
    private_subnet_ids = module.network.private_subnet_ids
    vpc_link_sg_id     = module.eks.cluster_security_group_id
 
-   # URLs dos ELBs ó pegue com: kubectl get svc
+   # URLs dos ELBs ‚Äî pegue com: kubectl get svc
    usuarios_api_elb    = var.usuarios_api_elb
    campanhas_api_elb  = var.campanhas_api_elb
 
