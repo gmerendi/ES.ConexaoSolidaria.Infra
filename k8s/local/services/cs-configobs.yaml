@@ -47,6 +47,22 @@ data:
         isDefault: true
         editable: false
 
+      - name: Zabbix
+        type: alexanderzobnin-zabbix-datasource
+        access: proxy
+        url: http://cs-zabbix/api_jsonrpc.php
+        isDefault: false
+        editable: false
+        jsonData:
+            username: Admin
+            trends: true
+            trendsFrom: "7d"
+            trendsRange: "4d"
+            cacheTTL: "1h"
+            dbConnectionEnable: false
+        secureJsonData:
+          password: zabbix
+
   
   dashboards.yml: |
     apiVersion: 1
