@@ -27,16 +27,27 @@ variable "image_version_qty" {
   default     = 1
 }
 
+variable "deploy_apigw" {
+  description = "Deploy API Gateway (requer ELBs criados pelo K8s)"
+  type        = bool
+  default     = true
+}
+
+
+############################################################################
+# Inserir apos dar deploy
+############################################################################
+
 variable "usuarios_api_elb" {
   description = "DNS do NLB interno da Usuarios API (kubectl get svc)"
   type        = string
-  default     = "ab5930a0da09b4ab4a5876a03318063a-6990d8db0e3d4055.elb.us-east-1.amazonaws.com"
+  default     = "a4856feb2b08c4f76965268ca7559554-a29d1c82e991619d.elb.us-east-1.amazonaws.com"
 }
 
 variable "campanhas_api_elb" {
   description = "DNS do NLB interno da Campanhas API (kubectl get svc)"
   type        = string
-  default     = "af80e018bb0024da6976b14925cca7d7-18c5cf56709e06d1.elb.us-east-1.amazonaws.com"
+  default     = "ae6c5a66a051d460bb644aeaf44be01c-beea980033bdfb01.elb.us-east-1.amazonaws.com"
 }
 
 

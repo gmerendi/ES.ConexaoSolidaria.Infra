@@ -67,7 +67,7 @@ spec:
           # ── Recursos ─────────────────────────────────────────────────────
           resources:
             requests:
-              cpu: "500m"
+              cpu: "256m"
               memory: "1Gi"    # Elasticsearch precisa de mais memória que outros serviços
             limits:
               cpu: "1000m"
