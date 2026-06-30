@@ -127,6 +127,12 @@ services:
     networks:
       - csnetwork
     command: "-jar DynamoDBLocal.jar -sharedDb"
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c '</dev/tcp/localhost/8000' || exit 1"]
+      interval: 5s   
+      timeout: 5s
+      retries: 3
+      start_period: 15s  
 
 
   ###########################################################################
@@ -139,6 +145,13 @@ services:
       - csnetwork
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s       
+      timeout: 3s        
+      retries: 3         
+      start_period: 15s    
+
 
   ###########################################################################
   # ELASTICSEARCH
@@ -154,6 +167,12 @@ services:
       - "9200:9200"
     networks:
       - csnetwork
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health | grep -q '\"status\":\"green\"\\|\"status\":\"yellow\"' || exit 1"]
+      interval: 10s   
+      timeout: 5s     
+      retries: 3     
+      start_period: 60s 
 
 
   ###########################################################################
@@ -179,6 +198,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+      start_period: 15s 
 
 
   ###########################################################################
@@ -204,6 +224,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+      start_period: 15s 
 
 
   ###########################################################################
@@ -221,7 +242,11 @@ services:
       cs.usuarios.db:
         condition: service_healthy
       cs.redis:
+        condition: service_healthy
+      cs.rabbitmq:
         condition: service_started
+      cs.dynamo.db:
+        condition: service_healthy
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
@@ -276,6 +301,12 @@ services:
       cs.campanhas.db:
         condition: service_healthy
       cs.redis:
+        condition: service_healthy
+      cs.rabbitmq:
+        condition: service_started
+      cs.dynamo.db:
+        condition: service_healthy
+      cs.elasticsearch:
         condition: service_started
     environment:
       ASPNETCORE_ENVIRONMENT: Development
@@ -330,9 +361,15 @@ services:
     container_name: cs-donationworker-api
     ports:
       - 5003:8080
-    # depends_on:
-    #   cs.campanhas.api:
-    #     condition: service_healthy
+    depends_on:
+      cs.campanhas.db:
+        condition: service_healthy
+      cs.redis:
+        condition: service_healthy
+      cs.rabbitmq:
+        condition: service_started
+      cs.dynamo.db:
+        condition: service_healthy
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
@@ -387,6 +424,8 @@ services:
       - 5004:8080
     depends_on:
       cs.rabbitmq:
+        condition: service_healthy
+      cs.mailpit:
         condition: service_healthy
     environment:
       ASPNETCORE_ENVIRONMENT: Development
@@ -545,6 +584,13 @@ services:
       - "8025:8025"  # Interface web 
     networks: 
       - csnetwork
+    user: root
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 8025 || exit 1"] 
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
 
 
 
@@ -601,7 +647,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 120s
+      start_period: 180s
 
 
   cs.zabbix.agent:
@@ -691,13 +737,13 @@ services:
       - source: grafana_datasource
         target: /etc/grafana/provisioning/datasources/prometheus.yaml
     volumes:
-      # Apenas o dashboard (pasta inteira — sem problema no Windows)
       - ./observability/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
       - grafana_data:/var/lib/grafana
     networks:
       - csnetwork
     depends_on:
       - cs.prometheus
+      - cs.zabbix
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]

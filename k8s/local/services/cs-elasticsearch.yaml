@@ -20,15 +20,27 @@ spec:
         app: cs-elasticsearch
         project: conexao-solidaria
     spec:
-      # Elasticsearch exige que o vm.max_map_count seja >= 262144
-      # Esse initContainer ajusta o kernel antes do container principal subir
+      # --- Bloco de Inicialização Corrigido e Expandido ---
       initContainers:
+        # 1. Ajusta o Kernel (Já existia no seu arquivo)
         - name: increase-vm-max-map-count
           image: busybox
           command: ["sysctl", "-w", "vm.max_map_count=262144"]
           securityContext:
             privileged: true
 
+        # 2. NOVO: Corrige as permissões da pasta para evitar o AccessDeniedException / node.lock
+        - name: fix-volume-permissions
+          image: busybox
+          command: ["sh", "-c", "chown -R 1000:1000 /usr/share/elasticsearch/data && chmod -R 775 /usr/share/elasticsearch/data"]
+          securityContext:
+            privileged: true # Usa o privilégio elevado para destravar a pasta montada do Windows/Host
+          volumeMounts:
+            - name: cs-elasticsearch-data
+              mountPath: /usr/share/elasticsearch/data
+
+      securityContext:
+        fsGroup: 1000 # Mantido como boa prática para o grupo do Elastic
       containers:
         - name: elasticsearch
           image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
@@ -68,14 +80,12 @@ spec:
           resources:
             requests:
               cpu: "256m"
-              memory: "1Gi"    # Elasticsearch precisa de mais memória que outros serviços
+              memory: "1Gi"
             limits:
               cpu: "1000m"
               memory: "1.5Gi"
 
           # ── Liveness Probe ────────────────────────────────────────────────
-          # Verifica se o cluster está vivo
-          # initialDelaySeconds alto pois Elasticsearch demora ~60s para iniciar
           livenessProbe:
             httpGet:
               path: /_cluster/health
@@ -87,7 +97,6 @@ spec:
             successThreshold: 1
 
           # ── Readiness Probe ───────────────────────────────────────────────
-          # Só marca como pronto quando o cluster estiver green ou yellow
           readinessProbe:
             httpGet:
               path: /_cluster/health?wait_for_status=yellow&timeout=5s
