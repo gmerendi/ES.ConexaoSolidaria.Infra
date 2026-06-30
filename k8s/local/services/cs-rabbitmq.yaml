@@ -70,7 +70,7 @@ spec:
                 - rabbitmq-diagnostics
                 - "-q"
                 - ping
-            initialDelaySeconds: 30   # aguarda o boot completo do RabbitMQ
+            initialDelaySeconds: 60   # aguarda o boot completo do RabbitMQ
             periodSeconds: 30
             timeoutSeconds: 30
             failureThreshold: 3
@@ -86,7 +86,7 @@ spec:
                 - rabbitmq-diagnostics
                 - "-q"
                 - check_running
-            initialDelaySeconds: 20
+            initialDelaySeconds: 60
             periodSeconds: 15
             timeoutSeconds: 15
             failureThreshold: 3

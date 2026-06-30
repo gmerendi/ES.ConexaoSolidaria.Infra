@@ -1,6 +1,86 @@
 # *********************************************************************************************************************** #
+# USUARIOS DB                                                                                                                #       
+# *********************************************************************************************************************** #
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: cs-usuarios-db-pv
+  labels:
+    app: usuarios
+    project: conexao-solidaria
+spec:
+  capacity:
+    storage: 100Mi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: "" 
+  hostPath:
+    path: "/mnt/data/usuarios"
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: cs-usuarios-db-pvc
+  labels:
+    app: usuarios
+    project: conexao-solidaria
+spec:
+  storageClassName: ""
+  volumeName: cs-usuarios-db-pv
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Mi
+
+
+
+# *********************************************************************************************************************** #
+# CAMPANHAS DB                                                                                                                #       
+# *********************************************************************************************************************** #
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: cs-campanhas-db-pv
+  labels:
+    app: campanhas
+    project: conexao-solidaria
+spec:
+  capacity:
+    storage: 100Mi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: "" 
+  hostPath:
+    path: "/mnt/data/campanhas"
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: cs-campanhas-db-pvc
+  labels:
+    app: campanhas
+    project: conexao-solidaria
+spec:
+  storageClassName: ""
+  volumeName: cs-campanhas-db-pv
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Mi
+
+
+
+# *********************************************************************************************************************** #
 # RABBITMQ                                                                                                                #       
 # *********************************************************************************************************************** #
+---
 apiVersion: v1
 kind: PersistentVolume
 metadata:
@@ -10,13 +90,71 @@ metadata:
     project: conexao-solidaria
 spec:
   capacity:
-    storage: 1Gi
+    storage: 100Mi
   accessModes:
     - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: "" # Nome customizado para ignorar a AWS
+  storageClassName: "" 
   hostPath:
-    path: "/mnt/data"
+    path: "/mnt/data/rabbitmq"
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: cs-rabbitmq-pvc
+  labels:
+    app: rabbitmq
+    project: conexao-solidaria
+spec:
+  storageClassName: ""
+  volumeName: cs-rabbitmq-pv
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Mi
+
+
+
+
+# *********************************************************************************************************************** #
+# REDIS                                                                                                                   #       
+# *********************************************************************************************************************** #
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: cs-redis-pv
+  labels:
+    app: redis
+    project: conexao-solidaria
+spec:
+  capacity:
+    storage: 100Mi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: "" 
+  hostPath:
+    path: "/mnt/data/redis"
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: cs-redis-pvc
+  labels:
+    app: redis
+    project: conexao-solidaria
+spec:
+  storageClassName: ""
+  volumeName: cs-redis-pv
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Mi
 
 
 
@@ -26,15 +164,34 @@ spec:
 # *********************************************************************************************************************** #
 ---
 apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: cs-elasticsearch-pv
+  labels:
+    app: elasticsearch
+    project: conexao-solidaria
+spec:
+  capacity:
+    storage: 100Mi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: "" 
+  hostPath:
+    path: "/mnt/data/elasticsearch"
+
+
+---
+apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: cs-elasticsearch-pvc
   labels:
-    app: cs-elasticsearch-pvc
+    app: elasticsearch
     project: conexao-solidaria
 spec:
   storageClassName: ""
-  volumeName: cs-pv
+  volumeName: cs-elasticsearch-pv
   accessModes:
     - ReadWriteOnce
   resources:
@@ -42,20 +199,81 @@ spec:
       storage: 50Mi
 
 
+
+
 # *********************************************************************************************************************** #
 # ZABBIX                                                                                                                  #       
 # *********************************************************************************************************************** #
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: cs-zabbix-pv
+  labels:
+    app: zabbix
+    project: conexao-solidaria
+spec:
+  capacity:
+    storage: 100Mi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: "" 
+  hostPath:
+    path: "/mnt/data/zabbix"
+
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: cs-zabbix-pvc
   labels:
-    app: cs-zabbix-pvc
+    app: zabbix
     project: conexao-solidaria
 spec:
   storageClassName: ""
-  volumeName: cs-pv
+  volumeName: cs-zabbix-pv
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Mi
+
+
+
+
+# *********************************************************************************************************************** #
+# DYNAMO                                                                                                                  #       
+# *********************************************************************************************************************** #
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: cs-dynamo-pv
+  labels:
+    app: dynamo
+    project: conexao-solidaria
+spec:
+  capacity:
+    storage: 100Mi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: "" 
+  hostPath:
+    path: "/mnt/data/dynamo"
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: cs-dynamo-pvc
+  labels:
+    app: dynamo
+    project: conexao-solidaria
+spec:
+  storageClassName: ""
+  volumeName: cs-dynamo-pv
   accessModes:
     - ReadWriteOnce
   resources:
