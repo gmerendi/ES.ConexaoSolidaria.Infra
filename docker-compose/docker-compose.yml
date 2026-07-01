@@ -11,6 +11,7 @@ volumes:
   prometheus_data: {}
   grafana_data: {}
   zabbix_data: {}
+  loki_data: {}
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -75,6 +76,21 @@ configs:
           secureJsonData:
             password: zabbix
 
+        - name: DynamoDB-PG
+          uid: dynamo-pg
+          type: postgres
+          url: cs-dynamo-pg-proxy:5450
+          user: grafana
+          database: dynamo
+          isDefault: false
+          editable: false
+          jsonData:
+            sslmode: disable
+            postgresVersion: 1400
+          secureJsonData:
+            password: grafana
+
+
   grafana_plugins:
     content: |
       apiVersion: 1
@@ -83,6 +99,7 @@ configs:
           disabled: false
           jsonData:
             enabled: true
+
 
 
 
@@ -723,7 +740,7 @@ services:
   # GRAFANA
   ###########################################################################
   cs.grafana:
-    image: grafana/grafana:11.1.0
+    image: grafana/grafana:11.4.0
     container_name: cs-grafana
     ports:
       - "3000:3000"
@@ -769,4 +786,32 @@ services:
       - csnetwork
     # depends_on:
     #   - cs.gateway.api
+    restart: on-failure
+
+
+
+
+  ###########################################################################
+  # DYNAMO PROXY
+  ###########################################################################
+  cs.dynamo.pg.proxy:
+    image: ${DOCKER_REGISTRY-}cs-dynamo-pg-proxy:latest
+    build:
+      context: ../../ES.ConexaoSolidaria.DynamoPgProxy
+      dockerfile: Dockerfile
+    container_name: cs-dynamo-pg-proxy
+    ports:
+      - "5450:5450"
+    environment:
+      DYNAMO_ENDPOINT:      "http://cs-dynamo-db:8000"
+      DYNAMO_REGION:        "us-east-1"
+      DYNAMO_TABLE_AUDIT:   "cs-audit-log"
+      DYNAMO_TABLE_APPLOGS: "cs-app-log"
+      AWS_ACCESS_KEY_ID:    "AKIAIOSFODNN7EXAMPLE"
+      AWS_SECRET_ACCESS_KEY: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+    depends_on:
+      cs.dynamo.db:
+        condition: service_healthy
+    networks:
+      - csnetwork
     restart: on-failure
