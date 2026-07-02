@@ -9,6 +9,7 @@ FIAP <br>
 |---- ES.ConexaoSolidaria.Worker <br>
 |---- ES.ConexaoSolidaria.Gateway <br>
 |---- ES.ConexaoSolidaria.Frontend <br>
+|---- ES.ConexaoSolidaria.DynamoPgProxy <br>
 
 <br>
 <br>
