@@ -55,8 +55,55 @@ docker-compose down -v
 
 ---
 ## Kubernetes Local
+Para rodar o projeto em kubernetes localmente é necessário o Docker desktop versao 4.79.0, com Kubernetes versão 134.3 configurado com um cluster kind com dois nodes - control-plane e worker: <br>
+<img width="2542" height="1027" alt="image" src="https://github.com/user-attachments/assets/b4977b54-7867-43e5-8eba-1eb595a0fc23" />
 
+<br>
 
+O projeto Conexão Solidária será criado contendo os seguintes artefatos:
+- ConfigMaps
+- Secrets
+- Pods
+- Deployments
+<br>
+
+Cada deployment contém um container, conforme listado na seção Docker-compose. <br>
+
+### Como criar a configuração no Kubernetes local
+1. Criar imagens Docker <br>
+Abrir terminal na pasta docker-compose e rodar o comando:
+```powershell
+docker-compose build
+```
+
+2. Abrir Terminal na raiz<br>
+<img width="558" height="270" alt="image" src="https://github.com/user-attachments/assets/2c563d41-6a8c-414d-be6e-2121d5fd3c06" />
+
+<br><br>
+
+3. Digite os comandos a seguir para criar a infraestrutura basica:
+```powershell
+ kubectl apply -f k8s/local/services/cs-aws-credentials.yaml
+ kubectl apply -f k8s/local/services/cs-aws-accounts.yaml
+ kubectl apply -f k8s/local/services/cs-configmap.yaml
+ kubectl apply -f k8s/local/services/cs-configproxy.yaml
+ kubectl apply -f k8s/local/services/cs-configobs.yaml
+ kubectl apply -f k8s/local/services/cs-secrets.yaml
+ kubectl apply -f k8s/local/services/cs-services.yaml
+ kubectl apply -f k8s/local/services/cs-volumes.yaml
+ kubectl apply -f k8s/local/services/cs-rabbitmq.yaml
+ kubectl apply -f k8s/local/services/cs-postgres.yaml
+ kubectl apply -f k8s/local/services/cs-dynamo.yaml
+ kubectl apply -f k8s/local/services/cs-redis.yaml
+ kubectl apply -f k8s/local/services/cs-elasticsearch.yaml
+ kubectl apply -f k8s/local/services/cs-mailpit.yaml
+ kubectl apply -f k8s/local/services/cs-dynamo-proxy.yaml
+ kubectl apply -f k8s/local/services/cs-configzabbix.yaml
+
+ # zabbix pode demorar. configurado 3 minutos de startup
+ kubectl apply -f k8s/local/services/cs-zabbix.yaml
+
+```
 ---
 ## AWS Cloud
 1. Configurar conta AWS
@@ -137,13 +184,8 @@ docker-compose build
 
 
 
-KUBERNETES
-1. Buildar as imagens
- Abrir terminal na pasta docker-compose e rodar o comando:
- docker-compose build
 
 
-4. Abrir Terminal na raiz
 
 5. Aplicar manifestos kubernetes localmente
 kubectl create configmap cs-grafana-user-dash --from-file=docker-compose/observability/grafana/provisioning/dashboards/usuarios-api.json
