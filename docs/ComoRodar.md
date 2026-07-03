@@ -331,11 +331,25 @@ O usuario e password utilizados (caso não tenham sido substituidos no arquivo d
 
 <br><br>
 <img width="2549" height="840" alt="image" src="https://github.com/user-attachments/assets/4ae252cf-697d-4cfb-b22f-90ff246e1ec8" />
+<br><br>
 
+A Observabilidade pode ser acessada através do Grafana, na url:<br>
+```
+http://localhost:3000/login
+```
+<br>
+O usuario e password utilizados (caso não tenham sido substituidos no arquivo de secret) são:<br>
 
+- user: fiap
+- password *: fiap123
 
+<br>
+<img width="2556" height="648" alt="image" src="https://github.com/user-attachments/assets/8618bf80-a9ad-4939-92a9-63e1948a5ee2" />
+<br><br>
 
- 
-
-
-
+O Frontend da aplicação pode ser acessado na url abaixo.  Para acessar, cadastre um novo usuário clicando em cadastrar ou acesse clicando em portal do usuário. <br>
+```
+http://localhost:5000
+```
+<br>
+<img width="2543" height="991" alt="image" src="https://github.com/user-attachments/assets/81260fc6-009c-4f1e-a068-fd378a761c0e" />
