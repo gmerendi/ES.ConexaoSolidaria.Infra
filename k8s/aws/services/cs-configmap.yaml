@@ -23,9 +23,14 @@ data:
   CAMPANHAS_DB_SVC: cs-postgres-db.cmdyd5viasmx.us-east-1.rds.amazonaws.com
   CAMPANHAS_POSTGRES_DB: "cs-campanhas"
 
+  #Gateway
+  GATEWAY_URL: "http://localhost:5006"
+
   #DynamoDB
   DYNAMODB_SERVICE_URL: "https://dynamodb.us-east-1.amazonaws.com"
   DYNAMODB_SVC: cs-dynamo-db
+  DYNAMO_TABLE_AUDIT: "cs-audit-log"
+  DYNAMO_TABLE_APPLOGS: "cs-app-log"
 
   #Aws
   AWS_REGION: "us-east-1"

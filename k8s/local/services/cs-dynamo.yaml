@@ -18,6 +18,15 @@ spec:
         app: cs-dynamo-db
         project: conexao-solidaria
     spec:
+      initContainers:
+          - name: fix-permissions
+            image: busybox
+            command: ["sh", "-c", "chmod -R 777 /home/dynamodblocal/data"]
+            volumeMounts:
+              - name: dynamo-data
+                mountPath: /home/dynamodblocal/data
+      securityContext:
+        fsGroup: 1000
       containers:
         - name: cs-dynamo-db
           image: amazon/dynamodb-local
@@ -26,9 +35,16 @@ spec:
             - "-jar"
             - "DynamoDBLocal.jar"
             - "-sharedDb"
+            - "-dbPath"
+            - "/home/dynamodblocal/data"
+
           ports:
             - name: dynamodb
               containerPort: 8000
+
+          volumeMounts:
+            - name: dynamo-data
+              mountPath: /home/dynamodblocal/data
 
           # ── Recursos ────────────────────────────────────────────────────
           resources:
@@ -38,6 +54,7 @@ spec:
             limits:
               cpu: "250m"
               memory: "512Mi"
+
 
           # ── Liveness Probe ───────────────────────────────────────────────
           # Verifica se o processo Java do DynamoDB está respondendo na porta
@@ -58,3 +75,8 @@ spec:
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 3
+
+      volumes:
+          - name: dynamo-data
+            persistentVolumeClaim:
+              claimName: cs-dynamo-db-pvc

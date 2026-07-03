@@ -249,7 +249,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: cs-dynamo-pv
+  name: cs-dynamo-db-pv
   labels:
     app: dynamo
     project: conexao-solidaria
@@ -267,13 +267,13 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: cs-dynamo-pvc
+  name: cs-dynamo-db-pvc
   labels:
     app: dynamo
     project: conexao-solidaria
 spec:
   storageClassName: ""
-  volumeName: cs-dynamo-pv
+  volumeName: cs-dynamo-db-pv
   accessModes:
     - ReadWriteOnce
   resources:

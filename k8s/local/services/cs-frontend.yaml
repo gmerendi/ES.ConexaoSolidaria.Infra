@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cs-frontend
+  labels:
+    app: cs-frontend
+    project: conexao-solidaria
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1        # sobe 1 pod novo antes de derrubar o antigo
+      maxUnavailable: 0  # garante zero downtime
+  selector:
+    matchLabels:
+      app: cs-frontend
+  template:
+    metadata:
+      labels:
+        app: cs-frontend
+        project: conexao-solidaria
+    spec:
+      containers:
+        - name: cs-frontend
+          image: cs-frontend:latest
+          # imagePullPolicy: Never → usa a imagem local buildada pelo docker-compose
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8080      
+
+          # ── Variáveis ──────────────────────────────────
+          env:
+           #Gateway
+            - name: GATEWAY_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: cs-configmap
+                  key: GATEWAY_URL
+
+          # ── Recursos ────────────────────────────────────────────────────
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+
+          # ── Liveness Probe ───────────────────────────────────────────────
+          # Se falhar: Kubernetes reinicia o container
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 15
+
+          # ── Readiness Probe ──────────────────────────────────────────────
+          # Se falhar: pod sai do Service até estar pronto
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10

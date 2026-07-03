@@ -782,6 +782,8 @@ services:
       dockerfile: src/Frontend/Dockerfile
     ports:
       - "5000:80"
+    environment:
+      GATEWAY_URL: "http://localhost:5006"
     networks:
       - csnetwork
     # depends_on:
