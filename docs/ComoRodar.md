@@ -285,6 +285,53 @@ docker-compose build
 
 
 ## Utilizando a aplicação
+Os micro-serviços de usuários e campanhas, não são acessíveis diretamente no browser, por serem internos. Eles são acessíveis via Gateway no endereço:
+```
+localhost:5006/swagger/index.html
+```
+Selecione o micro-serviço no dropdown "select a definition":<br>
+<img width="2544" height="992" alt="image" src="https://github.com/user-attachments/assets/f9d54c44-03b0-4bc3-9801-94fdb29c6444" />
+
+<br><br>
+Um usuário administrador é criado no deploy para que seja possivel a criação de Campanhas.  O password, nome e CPF desse usuário devem ser modificados após sua autenticação, no primeiro acesso:
+```
+{
+  "email": "admin@conexao-solidaria.com.br",
+  "password": "12345678Aa#"
+}
+```
+<br>
+Após realizar o login, um token é retornado: <br>
+<img width="1490" height="199" alt="image" src="https://github.com/user-attachments/assets/69b998ff-921b-4bd2-abc2-a869246261b3" />
+
+<br><br>
+Utilize esse token para realizar a autorização no swagger. Não é necessária a autorização em ambos serviços. Se o token foi autorizado no Usuários, também funciona para campanhas.<br>
+<img width="1207" height="454" alt="image" src="https://github.com/user-attachments/assets/fb667cc0-59ec-43c3-9ccd-f01c71b30b4c" />
+<br><br>
+
+Um email é enviado como notificação ao se criar um novo usuário ou se efetuar uma doação.  O e-mail pode ser verificado na url abaixo, que abrirá o Mailpit, onde pode ser verificar o e-mail enviado e seu conteúdo: <br>
+```
+http://localhost:8025/
+```
+<br>
+<img width="2549" height="700" alt="image" src="https://github.com/user-attachments/assets/38474614-381b-4efd-a4cb-4151db44f40c" />
+
+<br><br>
+Embora a porta do serviviço de mensageria AMQP seja interna por motivos de segurança, as mensagens enviadas para o RabbitMq podem ser verificadas no painel de monitoramento:
+```
+http://localhost:15672/
+```
+<br>
+
+O usuario e password utilizados (caso não tenham sido substituidos no arquivo de secret) são:<br>
+
+- user: fiap
+- password *: fiap123
+
+
+<br><br>
+<img width="2549" height="840" alt="image" src="https://github.com/user-attachments/assets/4ae252cf-697d-4cfb-b22f-90ff246e1ec8" />
+
 
 
 
