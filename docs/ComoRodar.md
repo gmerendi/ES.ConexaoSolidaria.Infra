@@ -11,6 +11,7 @@ Existem 3 maneiras de rodar o projeto: <br>
 - [Docker-Compose](#docker-compose)
 - [Kubernetes Local](#kubernetes-local)
 - [AWS Cloud](#aws-cloud)
+- [Utilizando a aplicação](#utilizando-a-aplicação)
 ---
 
 ## Docker-Compose
@@ -46,9 +47,11 @@ O projeto é criado de acordo com essa arquitetura local: <br>
 docker-compose up -- build
 ```
 <img width="552" height="412" alt="image" src="https://github.com/user-attachments/assets/31fdf045-4c6c-4a79-9f5f-8f39b8bf43ed" />
+<br>
+2. Vá para a seção - [Utilizando a aplicação](#utilizando-a-aplicação) para saber como chamar cada componente no browser
 
 ### Como deletar a configuração no docker-compose
-2. No mesmo terminal aberto na pasta docker-compose:
+1. No mesmo terminal aberto na pasta docker-compose:
 ```Powershell
 docker-compose down -v
 ```
@@ -77,8 +80,7 @@ docker-compose build
 ```
 
 2. Abrir Terminal na raiz<br>
-<img width="558" height="270" alt="image" src="https://github.com/user-attachments/assets/2c563d41-6a8c-414d-be6e-2121d5fd3c06" />
-
+<img width="592" height="273" alt="image" src="https://github.com/user-attachments/assets/1ff1dab3-ae64-4e5d-aba6-f87287ce6255" />
 <br><br>
 
 3. Digite os comandos a seguir para criar a infraestrutura basica:
@@ -104,6 +106,63 @@ docker-compose build
  kubectl apply -f k8s/local/services/cs-zabbix.yaml
 
 ```
+<br>
+4. Verifique os status dos pods com o comando abaixo.  Aguarde até que todos fiquem com status Running e Ready (1/1): <br>
+
+```powershell
+kubectl get pods
+```
+
+<img width="504" height="224" alt="image" src="https://github.com/user-attachments/assets/a405130a-4bed-4ed7-88ff-aefb5d92296b" />
+
+<br><br>
+5. Digite os comandos abaixo para criar os micro-serviços:<br>
+
+```powershell
+ kubectl apply -f k8s/local/services/cs-usuarios.yaml
+ kubectl apply -f k8s/local/services/cs-campanhas.yaml
+ kubectl apply -f k8s/local/services/cs-donationworker.yaml
+ kubectl apply -f k8s/local/services/cs-notificacoes.yaml
+ kubectl apply -f k8s/local/services/cs-gateway.yaml
+ kubectl apply -f k8s/local/services/cs-frontend.yaml
+ 
+```
+<br>
+6. Verifique os status dos pods com o comando abaixo.  Aguarde até que todos fiquem com status Running e Ready (1/1): <br>
+
+```powershell
+kubectl get pods
+```
+<img width="499" height="318" alt="image" src="https://github.com/user-attachments/assets/dd4c01f4-edaf-42d0-a48f-bb5476eb50b3" />
+<br><br>
+
+7. Digite os comandos abaixo para criar a observabilidade:<br>
+
+```powershell
+kubectl create configmap cs-grafana-user-dash --from-file=docker-compose/observability/grafana/provisioning/dashboards/usuarios-api.json
+kubectl create configmap cs-grafana-campaign-dash --from-file=docker-compose/observability/grafana/provisioning/dashboards/campanhas-api.json
+kubectl create configmap cs-grafana-donation-dash --from-file=docker-compose/observability/grafana/provisioning/dashboards/donationworker.json
+kubectl create configmap cs-grafana-zabbix-dash --from-file=docker-compose/observability/grafana/provisioning/dashboards/zabbix.json
+kubectl create configmap cs-grafana-app-logs-dash --from-file=docker-compose/observability/grafana/provisioning/dashboards/cs-app-logs.json
+kubectl create configmap cs-grafana-audit-log-dash --from-file=docker-compose/observability/grafana/provisioning/dashboards/cs-audit-log.json
+kubectl apply -f k8s/local/services/cs-prometheus.yaml
+kubectl apply -f k8s/local/services/cs-grafana.yaml
+ 
+```
+<br>
+8. Verifique os status dos pods com o comando abaixo.  Aguarde até que todos fiquem com status Running e Ready (1/1): <br>
+
+```powershell
+kubectl get pods
+```
+<img width="529" height="351" alt="image" src="https://github.com/user-attachments/assets/3ea0143e-7e85-430f-a4f4-c8111071f1fa" />
+
+<br><br>
+
+
+9. Vá para a seção - [Utilizando a aplicação](#utilizando-a-aplicação) para saber como chamar cada componente no browser
+
+
 ---
 ## AWS Cloud
 1. Configurar conta AWS
@@ -183,55 +242,23 @@ docker-compose build
 
 
 
-
+## Utilizando a aplicação
 
 
 
 5. Aplicar manifestos kubernetes localmente
-kubectl create configmap cs-grafana-user-dash --from-file=docker-compose/observability/grafana/provisioning/dashboards/usuarios-api.json
-kubectl create configmap cs-grafana-campaign-dash --from-file=docker-compose/observability/grafana/provisioning/dashboards/campanhas-api.json
-kubectl create configmap cs-grafana-donation-dash --from-file=docker-compose/observability/grafana/provisioning/dashboards/donationworker.json
-kubectl create configmap cs-grafana-zabbix-dash --from-file=docker-compose/observability/grafana/provisioning/dashboards/zabbix.json
-kubectl create configmap cs-grafana-app-logs-dash --from-file=docker-compose/observability/grafana/provisioning/dashboards/cs-app-logs.json
-kubectl create configmap cs-grafana-audit-log-dash --from-file=docker-compose/observability/grafana/provisioning/dashboards/cs-audit-log.json
-
- kubectl apply -f k8s/local/services/cs-aws-credentials.yaml
- kubectl apply -f k8s/local/services/cs-aws-accounts.yaml
- kubectl apply -f k8s/local/services/cs-configmap.yaml
- kubectl apply -f k8s/local/services/cs-configproxy.yaml
- kubectl apply -f k8s/local/services/cs-configobs.yaml
- kubectl apply -f k8s/local/services/cs-secrets.yaml
- kubectl apply -f k8s/local/services/cs-services.yaml
- kubectl apply -f k8s/local/services/cs-volumes.yaml
- kubectl apply -f k8s/local/services/cs-rabbitmq.yaml
- kubectl apply -f k8s/local/services/cs-postgres.yaml
- kubectl apply -f k8s/local/services/cs-dynamo.yaml
- kubectl apply -f k8s/local/services/cs-redis.yaml
- kubectl apply -f k8s/local/services/cs-elasticsearch.yaml
- kubectl apply -f k8s/local/services/cs-mailpit.yaml
- kubectl apply -f k8s/local/services/cs-dynamo-proxy.yaml
 
 
-   kubectl get pods
+ 
 
- * Aguardar os pods ficarem prontos
 
- kubectl apply -f k8s/local/services/cs-usuarios.yaml
- kubectl apply -f k8s/local/services/cs-campanhas.yaml
- kubectl apply -f k8s/local/services/cs-donationworker.yaml
- kubectl apply -f k8s/local/services/cs-notificacoes.yaml
- kubectl apply -f k8s/local/services/cs-gateway.yaml
- kubectl apply -f k8s/local/services/cs-frontend.yaml
 
  kubectl get pods
 
  * Aguardar os pods ficarem prontos
 
- kubectl apply -f k8s/local/services/cs-configzabbix.yaml
- # zabbix pode demorar. configurado 3 minutos de startup
- kubectl apply -f k8s/local/services/cs-zabbix.yaml
- kubectl apply -f k8s/local/services/cs-prometheus.yaml
- kubectl apply -f k8s/local/services/cs-grafana.yaml
+ 
+ 
 
 
 
