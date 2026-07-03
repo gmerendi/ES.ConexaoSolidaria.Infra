@@ -331,7 +331,8 @@ Responda "yes":<br/>
 <br/>
 <br/>
 Ao término da geração do hardware, ele irá mostrar o que foi criado:<br/>
-<img width="700" height="325" alt="image" src="https://github.com/user-attachments/assets/b059bedf-8f6d-4336-800f-fa25bb07822d" />
+<img width="690" height="351" alt="image" src="https://github.com/user-attachments/assets/6e806659-67fd-4d97-90ca-cd4b2ffa0887" />
+
 
 <br/>
 <br/>
