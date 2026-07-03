@@ -336,6 +336,7 @@ Ao término da geração do hardware, ele irá mostrar o que foi criado:<br/>
 
 <br/>
 <br/>
+
 #### 3.5) Verificar o email cadastrado no terraform
 O email inserido nesse campo será o e-mail utilizado para os testes de notificação:<br>
 <img width="541" height="275" alt="image" src="https://github.com/user-attachments/assets/115027b0-bef7-4a9f-ab50-7efa8245c5fd" />
