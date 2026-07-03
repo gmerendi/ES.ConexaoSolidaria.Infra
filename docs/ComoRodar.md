@@ -207,6 +207,146 @@ kubectl delete -f k8s/local/services/cs-volumes.yaml
 
 ---
 ## AWS Cloud
+
+### Como criar a configuração no AWS
+
+#### 1.0 Pré-requisitos
+
+Para preparar o ambiente de infraestrutura, siga os passos abaixo:
+
+#### 1.1) Baixar o Terraform
+Acesse o site oficial da HashiCorp e realize o download da versão estável mais recente para o seu sistema operacional:
+👉 [Download Terraform Oficial](https://developer.hashicorp.com/terraform/install)
+
+#### 1.2) Instalação Manual (Raiz da Infra)
+Após baixar o arquivo, extraia o conteúdo e mova o executável para a pasta de infraestrutura do projeto:
+
+* **Destino:** Salve o arquivo `terraform.exe` na raiz da pasta `/infra`.
+
+```bash
+# Estrutura esperada:
+
+├── docker-compose/
+├── docs/
+├── k8s/
+└── infra/
+   ├── modules
+   ├── terraform.exe  <-- O arquivo deve estar aqui
+   ├── locals.tf
+   ├── main.tf
+   ├── providers.tf
+   ├── terraform.tfvars
+   └── variables.tf
+
+```
+
+#### 1.3) Crie uma conta mailtrap
+Acesse https://mailtrap.io/ e crie uma conta.
+<br/>
+Na página home, clique em E-mail API/SMTP.
+<br/>
+<img width="1889" height="412" alt="image" src="https://github.com/user-attachments/assets/b5185ccd-ebc6-42bb-8624-fb1be3a59014" />
+<br/>
+<br/>
+Siga os passos para criar uma api e anote o token e inbox ID.
+
+#### 1.4) Crie o arquivo terraform.tfvars a partir do arquivo terraform.tfvars.example
+<img width="669" height="313" alt="image" src="https://github.com/user-attachments/assets/f536b0d9-bf73-42aa-bdc0-d33a8bd953d8" />
+
+
+#### 1.5) Modifique o arquivo k8s/aws/services/cs-configmap e modifique os dados do AWS:
+<img width="2544" height="793" alt="image" src="https://github.com/user-attachments/assets/c59912b9-613b-4606-a8ea-f5c85c0b2913" />
+
+### 2.0 Laboratório AWS
+
+Para iniciar o Laboratório AWS, siga os seguintes passos abaixo:
+
+#### 2.1) Acesse o Laboratorio utilizando suas credenciais
+
+#### 2.2) No laboratorio, clique em Start Lab
+<img width="1799" height="353" alt="image" src="https://github.com/user-attachments/assets/25e39fc7-4578-4db5-a371-9a5004b5f091" />
+
+#### 2.3) Após o ícone do AWS ficar verde, clique em AWS Details e AWS Cli Show
+<img width="1799" height="421" alt="image" src="https://github.com/user-attachments/assets/be5b31b8-264b-483e-9c7d-27cb89a2020f" />
+
+<br/>
+
+Copie os dados de:<br/>
+- AWS_ACCESS_KEY_ID
+- AWS_SECRET_ACCESS_KEY
+- AWS_SESSION_TOKEN
+<br/>
+Copiar o Account ID:<br/>
+<img width="804" height="211" alt="image" src="https://github.com/user-attachments/assets/e434a65d-7eba-4f63-8e16-314718e6d9d5" />
+
+### 3.0 Criando Infra utilizando o terraform
+#### 3.1) Insira os dados da AWS
+Abra um terminal **PowerShell** na pasta `terraform`:<br/><br/>
+<img width="561" height="506" alt="image" src="https://github.com/user-attachments/assets/2863b293-c853-4394-823a-80d009108ea4" />
+
+<br/>
+
+E digite:<br/>
+
+```powershell
+aws configure
+```
+
+Insira os dados conforme solicitados.
+<br/>
+<br/>
+
+#### 3.2) Troque os dados de credenciais e sessao no aws-credentials
+Abra o arquivo k8s/aws/services/cs-aws-credentials.yaml e insira os dados da conta também nesse arquivo.
+<img width="374" height="216" alt="image" src="https://github.com/user-attachments/assets/7f5aa05e-0355-4f9e-8a1c-9b5015f10996" />
+
+<br/>
+<br/>
+#### 3.3) Troque o AWSAccountID
+Abra o arquivo k8s/aws/services/cs-aws-accounts.yaml e insira O ID de usuário
+<img width="541" height="164" alt="image" src="https://github.com/user-attachments/assets/59346f63-25c9-4381-98cb-e83e6442dfcb" />
+
+<br/>
+<br/>
+
+
+#### 3.4) Rode o terraform
+No powershell aberto na pasta infra, digite o comando:
+```powershell
+.\terraform init
+```
+Ao final será mostrada a mensagem que o terraform está inicializado:<br/>
+<img width="578" height="153" alt="image" src="https://github.com/user-attachments/assets/68db0652-9c57-4db4-bcb4-cbb9d7b9a20c" />
+
+<br><br>
+
+No powershell aberto na pasta infra, digite o comando:
+```powershell
+.\terraform apply
+```
+<br>
+O terraform irá verificar na conta se ja existe algum hardware criado, criando o plano e irá perguntar se pode realizar as ações.
+Responda "yes":<br/>
+<img width="398" height="291" alt="image" src="https://github.com/user-attachments/assets/3bbc4e3f-c71a-452d-99fe-c2726585324e" />
+<br/>
+<br/>
+Ao término da geração do hardware, ele irá mostrar o que foi criado:<br/>
+<img width="700" height="325" alt="image" src="https://github.com/user-attachments/assets/b059bedf-8f6d-4336-800f-fa25bb07822d" />
+
+
+<br/>
+<br/>
+#### 3.5) Conectar o seu terminal ao cluster Kubernetes (EKS)
+```powershell
+aws eks update-kubeconfig --region us-east-1 --name fcg-cluster
+```
+
+#### 3.6) Rode o Workflow de todos os repositorios de microservicos:
+<img width="3760" height="901" alt="image" src="https://github.com/user-attachments/assets/a6346c58-0317-4415-9d4c-625c506a9bb1" />
+
+
+
+-----------------------------------------------------------------------------------------
 1. Configurar conta AWS
 aws configure 
 
