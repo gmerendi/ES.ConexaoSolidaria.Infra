@@ -161,6 +161,48 @@ kubectl get pods
 
 
 9. Vá para a seção - [Utilizando a aplicação](#utilizando-a-aplicação) para saber como chamar cada componente no browser
+<br>
+
+### Como deletar a configuração no kubernetes
+1. No mesmo terminal aberto na raiz, digite os comandos abaixo:
+```Powershell
+kubectl delete -f k8s/local/services/cs-prometheus.yaml
+kubectl delete -f k8s/local/services/cs-grafana.yaml
+
+kubectl delete -f k8s/local/services/cs-frontend.yaml
+kubectl delete -f k8s/local/services/cs-usuarios.yaml
+kubectl delete -f k8s/local/services/cs-campanhas.yaml
+kubectl delete -f k8s/local/services/cs-donationworker.yaml
+kubectl delete -f k8s/local/services/cs-notificacoes.yaml
+kubectl delete -f k8s/local/services/cs-gateway.yaml
+
+kubectl delete -f k8s/local/services/cs-rabbitmq.yaml
+kubectl delete -f k8s/local/services/cs-postgres.yaml
+kubectl delete -f k8s/local/services/cs-dynamo.yaml
+kubectl delete -f k8s/local/services/cs-redis.yaml
+kubectl delete -f k8s/local/services/cs-elasticsearch.yaml
+kubectl delete -f k8s/local/services/cs-mailpit.yaml
+kubectl delete -f k8s/local/services/cs-dynamo-proxy.yaml
+
+kubectl delete -f k8s/local/services/cs-configzabbix.yaml
+kubectl delete -f k8s/local/services/cs-zabbix.yaml
+
+kubectl delete -f k8s/local/services/cs-aws-credentials.yaml
+kubectl delete -f k8s/local/services/cs-aws-accounts.yaml
+kubectl delete -f k8s/local/services/cs-configmap.yaml
+kubectl delete -f k8s/local/services/cs-configproxy.yaml
+kubectl delete -f k8s/local/services/cs-configobs.yaml
+kubectl delete configmap cs-grafana-user-dash
+kubectl delete configmap cs-grafana-campaign-dash
+kubectl delete configmap cs-grafana-donation-dash
+kubectl delete configmap cs-grafana-zabbix-dash
+kubectl delete configmap cs-grafana-app-logs-dash
+kubectl delete configmap cs-grafana-audit-log-dash
+kubectl delete -f k8s/local/services/cs-secrets.yaml
+kubectl delete -f k8s/local/services/cs-services.yaml
+kubectl delete -f k8s/local/services/cs-volumes.yaml
+
+```
 
 
 ---
@@ -246,59 +288,7 @@ docker-compose build
 
 
 
-5. Aplicar manifestos kubernetes localmente
-
-
  
 
 
 
- kubectl get pods
-
- * Aguardar os pods ficarem prontos
-
- 
- 
-
-
-
-
-
-
-
- 6. Para deletar
- kubectl delete -f k8s/local/services/cs-prometheus.yaml
- kubectl delete -f k8s/local/services/cs-grafana.yaml
-
- kubectl delete -f k8s/local/services/cs-frontend.yaml
- kubectl delete -f k8s/local/services/cs-usuarios.yaml
- kubectl delete -f k8s/local/services/cs-campanhas.yaml
- kubectl delete -f k8s/local/services/cs-donationworker.yaml
- kubectl delete -f k8s/local/services/cs-notificacoes.yaml
- kubectl delete -f k8s/local/services/cs-gateway.yaml
-
- kubectl delete -f k8s/local/services/cs-rabbitmq.yaml
- kubectl delete -f k8s/local/services/cs-postgres.yaml
- kubectl delete -f k8s/local/services/cs-dynamo.yaml
- kubectl delete -f k8s/local/services/cs-redis.yaml
- kubectl delete -f k8s/local/services/cs-elasticsearch.yaml
- kubectl delete -f k8s/local/services/cs-mailpit.yaml
- kubectl delete -f k8s/local/services/cs-dynamo-proxy.yaml
-
- kubectl delete -f k8s/local/services/cs-configzabbix.yaml
- kubectl delete -f k8s/local/services/cs-zabbix.yaml
-
- kubectl delete -f k8s/local/services/cs-aws-credentials.yaml
- kubectl delete -f k8s/local/services/cs-aws-accounts.yaml
- kubectl delete -f k8s/local/services/cs-configmap.yaml
- kubectl delete -f k8s/local/services/cs-configproxy.yaml
- kubectl delete -f k8s/local/services/cs-configobs.yaml
- kubectl delete configmap cs-grafana-user-dash
- kubectl delete configmap cs-grafana-campaign-dash
- kubectl delete configmap cs-grafana-donation-dash
- kubectl delete configmap cs-grafana-zabbix-dash
- kubectl delete configmap cs-grafana-app-logs-dash
- kubectl delete configmap cs-grafana-audit-log-dash
- kubectl delete -f k8s/local/services/cs-secrets.yaml
- kubectl delete -f k8s/local/services/cs-services.yaml
- kubectl delete -f k8s/local/services/cs-volumes.yaml
