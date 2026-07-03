@@ -27,9 +27,14 @@ data:
   DOACOES_DB_SVC: cs-doacoes-db-svc
   DOACOES_POSTGRES_DB: "cs-doacoes"
 
+  #Gateway
+  GATEWAY_URL: "http://localhost:5006"
+
   #DynamoDB
   DYNAMODB_SERVICE_URL: "http://cs-dynamo-db-svc:8000"
   DYNAMODB_SVC: cs-dynamo-db
+  DYNAMO_TABLE_AUDIT: "cs-audit-log"
+  DYNAMO_TABLE_APPLOGS: "cs-app-log"
 
   #Redis
   REDIS_SERVICE_URL: "cs-redis-svc:6379"
@@ -51,8 +56,8 @@ data:
 
 
   #AWS - Chave Falsa, so para rodar o dynamo local
-  AWS_ACCESS_KEY_ID: "fake-access-key"
-  AWS_SECRET_ACCESS_KEY: "fake-secret-key"
+  AWS_ACCESS_KEY_ID: "AKIAIOSFODNN7EXAMPLE"
+  AWS_SECRET_ACCESS_KEY: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
   AWS_DEFAULT_REGION: "us-east-1"
 
   #.NetCore

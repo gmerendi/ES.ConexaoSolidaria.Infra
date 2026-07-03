@@ -88,6 +88,14 @@ spec:
               mountPath: /var/lib/grafana/dashboards/zabbix.json
               subPath: zabbix.json
 
+            - name: app-logs-dash-volume
+              mountPath: /var/lib/grafana/dashboards/cs-app-logs.json
+              subPath: cs-app-logs.json
+
+            - name: audit-log-dash-volume
+              mountPath: /var/lib/grafana/dashboards/cs-audit-log.json
+              subPath: cs-audit-log.json
+
       # ── Declaração dos Volumes do Cluster ──────────────────────────────────
       volumes:
         # Puxa os arquivos estruturais (Datasource e Provider) 
@@ -119,3 +127,11 @@ spec:
         - name: zabbix-dash-volume
           configMap:
             name: cs-grafana-zabbix-dash
+
+        - name: app-logs-dash-volume
+          configMap:
+            name: cs-grafana-app-logs-dash
+
+        - name: audit-log-dash-volume
+          configMap:
+            name: cs-grafana-audit-log-dash

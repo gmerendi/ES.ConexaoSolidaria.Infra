@@ -399,6 +399,30 @@ spec:
       targetPort: 10050
   type: ClusterIP
 
+
+# *********************************************************************************************************************** #
+# DYNAMO PG PROXY                                                                                                         #       
+# *********************************************************************************************************************** #
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cs-dynamo-pg-proxy-svc
+  labels:
+    app: cs-dynamo-pg-proxy
+    project: conexao-solidaria
+spec:
+  selector:
+    app: cs-dynamo-pg-proxy
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 5450
+      targetPort: 5450
+      protocol: TCP
+
+
+
 # *********************************************************************************************************************** #
 # GRAFANA                                                                                                                 #       
 # *********************************************************************************************************************** #
@@ -418,5 +442,27 @@ spec:
     - name: http
       port: 3000
       targetPort: 3000
+      protocol: TCP
+
+
+# *********************************************************************************************************************** #
+# FRONTEND                                                                                                                #       
+# *********************************************************************************************************************** #
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cs-frontend-svc
+  labels:
+    app: cs-frontend
+    project: conexao-solidaria
+spec:
+  selector:
+    app: cs-frontend
+  type: LoadBalancer
+  ports:
+    - name: http
+      port: 5000
+      targetPort: 80
       protocol: TCP
 

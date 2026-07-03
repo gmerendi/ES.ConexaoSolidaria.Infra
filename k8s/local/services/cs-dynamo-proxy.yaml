@@ -1,0 +1,100 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cs-dynamo-pg-proxy
+  labels:
+    app: cs-dynamo-pg-proxy
+    project: conexao-solidaria
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1        # sobe 1 pod novo antes de derrubar o antigo
+      maxUnavailable: 0  # garante zero downtime
+  selector:
+    matchLabels:
+      app: cs-dynamo-pg-proxy
+  template:
+    metadata:
+      labels:
+        app: cs-dynamo-pg-proxy
+        project: conexao-solidaria
+    spec:
+      containers:
+        - name: cs-dynamo-pg-proxy
+          image: cs-dynamo-pg-proxy:latest
+          # imagePullPolicy: Never → usa a imagem local buildada pelo docker-compose
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 5450      
+
+          # ── Variáveis ──────────────────────────────────
+          env:
+
+            - name: DYNAMO_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: cs-configmap
+                  key: DYNAMODB_SERVICE_URL
+
+            - name: DYNAMO_REGION
+              valueFrom:
+                configMapKeyRef:
+                  name: cs-configmap
+                  key: AWS_DEFAULT_REGION
+
+            - name: DYNAMO_TABLE_AUDIT
+              valueFrom:
+                configMapKeyRef:
+                  name: cs-configmap
+                  key: DYNAMO_TABLE_AUDIT
+
+            - name: DYNAMO_TABLE_APPLOGS
+              valueFrom:
+                configMapKeyRef:
+                  name: cs-configmap
+                  key: DYNAMO_TABLE_APPLOGS
+
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: cs-configmap
+                  key: AWS_ACCESS_KEY_ID
+
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                configMapKeyRef:
+                  name: cs-configmap
+                  key: AWS_SECRET_ACCESS_KEY
+         
+
+          # ── Recursos ────────────────────────────────────────────────────
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "200m"
+              memory: "256Mi"
+
+          # ── Liveness Probe ───────────────────────────────────────────────
+          # Se falhar: Kubernetes reinicia o container
+          livenessProbe:
+            tcpSocket:
+              port: 5450
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          # ── Readiness Probe ──────────────────────────────────────────────
+          # Se falhar: pod sai do Service até estar pronto
+          readinessProbe:
+            tcpSocket:
+              port: 5450
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
