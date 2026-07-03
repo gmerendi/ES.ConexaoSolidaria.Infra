@@ -346,20 +346,31 @@ Acesse o e-mail configurado e verifique aceite a subscrição proveniente da AWS
 <br><br>
 #### 3.6) Conectar o seu terminal ao cluster Kubernetes (EKS)
 ```powershell
-aws eks update-kubeconfig --region us-east-1 --name fcg-cluster
+aws eks update-kubeconfig --region us-east-1 --name cs-cluster
 ```
 
 #### 3.7) Rode o Workflow de todos os repositorios de microservicos:
-<img width="3760" height="901" alt="image" src="https://github.com/user-attachments/assets/a6346c58-0317-4415-9d4c-625c506a9bb1" />
+TODO
+<br><br>
+
+#### 3.8) Fazer deploy dos manifestos Kubernetes
+Abra um powershell na raiz e digite os comandos abaixo:
+```powershell
+kubectl apply -f k8s/aws/services/cs-aws-credentials.yaml
+kubectl apply -f k8s/aws/services/cs-aws-accounts.yaml
+kubectl apply -f k8s/aws/services/cs-configmap.yaml
+kubectl apply -f k8s/aws/services/cs-configzabbix.yaml
+kubectl apply -f k8s/aws/services/cs-configobs.yaml
+kubectl apply -f k8s/aws/services/cs-secrets.yaml
+kubectl apply -f k8s/aws/services/cs-services.yaml
+kubectl apply -f k8s/aws/services/cs-volumes.yaml
+kubectl apply -f k8s/aws/services/cs-elasticsearch.yaml
+kubectl apply -f k8s/aws/services/cs-zabbix.yaml
+
+```
 
 
-
------------------------------------------------------------------------------------------
-1. Configurar conta AWS
-aws configure 
-
-2. Aplicar Terraform
-.\terraform apply
+----------------------------------------------------------------------------------------
 
 2. Criar imagens Docker
 Abrir terminal na pasta docker-compose e rodar o comando:
@@ -376,13 +387,8 @@ docker-compose build
  docker push 641008666847.dkr.ecr.us-east-1.amazonaws.com/cs-usuarios-api:latest
  docker push 641008666847.dkr.ecr.us-east-1.amazonaws.com/cs-campanhas-api:latest
  docker push 641008666847.dkr.ecr.us-east-1.amazonaws.com/cs-donationworker-api:latest
+--------------------------------------------------------------------------------------------------
 
-
- 4. Conectar o Kubernetes no aws
- aws eks update-kubeconfig --region us-east-1 --name cs-cluster
-
-
- 5. Inserir os dados de conta no cs-aws-credentials.yaml
 
 
  6. Abrir Terminal na raiz
