@@ -1,13 +1,55 @@
-DOCKER COMPOSE
-1. Abrir terminal na pasta docker-compose e rodar o comando:
+# Como rodar o projeto
+
+Existem 3 maneiras de rodar o projeto: <br>
+- Docker-compose : Cria containers no docker desktop, não gerenciados. Essa é a forma mais simples, com apenas 1 comando.
+- Kubernetes local: Cria os deployments kubernetes localmente, utilizando a instalação kubernetes monitorada no docker desktop.
+- AWS Cloud: Cria os deployments kubernetes no cloud AWS, utilizando serviços no cloud como alternativa para os serviços locais.
+
+## Docker-Compose
+Para rodar o docker-compose é necessário o Docker desktop versao 4.79.0: <br>
+<img width="2537" height="606" alt="image" src="https://github.com/user-attachments/assets/7585a1bc-5e0a-4962-b70d-c9c70d446bfd" />
+<br>
+
+O projeto Conexão Solidária será criado contendo os seguintes containers:
+- cs-usuarios-api : Responsável pelo gerenciamento de usuários e autenticação
+- cs-campanhas-api : Responsável pelo gerenciamento de campanhas e doações
+- cs-donationworker-api : Responsável pelo consumo de intenção de doaçao gerada na campanha e gravação em banco de dados
+- cs-notificacoes : Responsável pelo envio de e-mails de notificação aos usuários
+- cs-gateway-api : Api Gateway responsável pelo gerenciamento de conexão para os micro-serviços
+- cs-redis : Responsável pelo cache da aplicação
+- cs-elasticsearch : Mecanismo de busca e análise de dados tolerante à erros de digitação.
+- cs-dynamo-db : Base de Dados NoSQL responsável pelo amazenamento de logs de aplicação e auditoria.
+- cs-usuarios-db : Base de dados PostGreSQL responsável pelo armazenamento de dados de usuarios
+- cs-campanhas-db : Base de dados PostGreSQL responsável pelo armazenamento de dados de campanhas e doações
+- cs-mailpit : Aplicação Frontend Conexão Solidária
+- cs-rabbitmq : Broker de mensageria
+- cs-zabbix : Plataforma de monitoramento de infraestrutura de TI
+- cs-zabbix-agent : Coletor de dados para o Zabbix.
+- cs-zabbix-init : Inicializador de configuração do zabbix. Não permanece rodando.  Parte, configura o zabbix e para.
+- cs-prometheus : Plataforma de monitoramento para coleta de métricas.
+- cs-grafana : Plataforma de observabilidade que gera gráficos e alertas baseados em dados provenientes do Zabbix, Prometheus e Dynamo (logs)
+<br>
+O projeto é criado de acordo com essa arquitetura local: <br>
+* TODO * <br>
+
+### Como criar a configuração no docker-compose
+1. Abrir terminal na pasta docker-compose e rodar o comando:<br>
+```powershell
 docker-compose up -- build
+```
+<img width="552" height="412" alt="image" src="https://github.com/user-attachments/assets/31fdf045-4c6c-4a79-9f5f-8f39b8bf43ed" />
 
-2. Para deletar
+### Como deletar a configuração no docker-compose
+2. No mesmo terminal aberto na pasta docker-compose:
+```Powershell
 docker-compose down -v
+```
+
+## Kubernetes Local
 
 
 
-AWS
+## AWS Cloud
 1. Configurar conta AWS
 aws configure 
 
