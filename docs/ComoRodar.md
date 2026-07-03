@@ -299,9 +299,9 @@ Insira os dados conforme solicitados.
 #### 3.2) Troque os dados de credenciais e sessao no aws-credentials
 Abra o arquivo k8s/aws/services/cs-aws-credentials.yaml e insira os dados da conta também nesse arquivo.
 <img width="374" height="216" alt="image" src="https://github.com/user-attachments/assets/7f5aa05e-0355-4f9e-8a1c-9b5015f10996" />
+<br/>
+<br/>
 
-<br/>
-<br/>
 #### 3.3) Troque o AWSAccountID
 Abra o arquivo k8s/aws/services/cs-aws-accounts.yaml e insira O ID de usuário
 <img width="541" height="164" alt="image" src="https://github.com/user-attachments/assets/59346f63-25c9-4381-98cb-e83e6442dfcb" />
@@ -333,15 +333,21 @@ Responda "yes":<br/>
 Ao término da geração do hardware, ele irá mostrar o que foi criado:<br/>
 <img width="700" height="325" alt="image" src="https://github.com/user-attachments/assets/b059bedf-8f6d-4336-800f-fa25bb07822d" />
 
+<br/>
+<br/>
+#### 3.5) Verificar o email cadastrado no terraform
+O email inserido nesse campo será o e-mail utilizado para os testes de notificação:<br>
+<img width="541" height="275" alt="image" src="https://github.com/user-attachments/assets/115027b0-bef7-4a9f-ab50-7efa8245c5fd" />
+<br>
+Acesse o e-mail configurado e verifique aceite a subscrição proveniente da AWS. Caso esse passo não seja feito, os e-mails de notificação não serão enviados.
 
-<br/>
-<br/>
-#### 3.5) Conectar o seu terminal ao cluster Kubernetes (EKS)
+<br><br>
+#### 3.6) Conectar o seu terminal ao cluster Kubernetes (EKS)
 ```powershell
 aws eks update-kubeconfig --region us-east-1 --name fcg-cluster
 ```
 
-#### 3.6) Rode o Workflow de todos os repositorios de microservicos:
+#### 3.7) Rode o Workflow de todos os repositorios de microservicos:
 <img width="3760" height="901" alt="image" src="https://github.com/user-attachments/assets/a6346c58-0317-4415-9d4c-625c506a9bb1" />
 
 
