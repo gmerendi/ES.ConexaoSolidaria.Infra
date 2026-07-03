@@ -3,7 +3,15 @@
 Existem 3 maneiras de rodar o projeto: <br>
 - Docker-compose : Cria containers no docker desktop, não gerenciados. Essa é a forma mais simples, com apenas 1 comando.
 - Kubernetes local: Cria os deployments kubernetes localmente, utilizando a instalação kubernetes monitorada no docker desktop.
-- AWS Cloud: Cria os deployments kubernetes no cloud AWS, utilizando serviços no cloud como alternativa para os serviços locais.
+- AWS Cloud: Cria os deployments kubernetes no cloud AWS, utilizando serviços no cloud como alternativa para os serviços locais.  Requer criação prévia da Infra no AWS.
+
+---
+
+## Sumário
+- [Docker-Compose](#docker-compose)
+- [Kubernetes Local](#kubernetes-local)
+- [AWS Cloud](#aws-cloud)
+---
 
 ## Docker-Compose
 Para rodar o docker-compose é necessário o Docker desktop versao 4.79.0: <br>
@@ -45,10 +53,11 @@ docker-compose up -- build
 docker-compose down -v
 ```
 
+---
 ## Kubernetes Local
 
 
-
+---
 ## AWS Cloud
 1. Configurar conta AWS
 aws configure 
