@@ -41,13 +41,19 @@ variable "deploy_apigw" {
 variable "usuarios_api_elb" {
   description = "DNS do NLB interno da Usuarios API (kubectl get svc)"
   type        = string
-  default     = "a4856feb2b08c4f76965268ca7559554-a29d1c82e991619d.elb.us-east-1.amazonaws.com"
+  default     = "aefed0fc8be274a078f758376a383185-4f3dbeb3b7587d61.elb.us-east-1.amazonaws.com"
 }
 
 variable "campanhas_api_elb" {
   description = "DNS do NLB interno da Campanhas API (kubectl get svc)"
   type        = string
-  default     = "ae6c5a66a051d460bb644aeaf44be01c-beea980033bdfb01.elb.us-east-1.amazonaws.com"
+  default     = "ac500cab4fca9492e9542a67586e6234-9070b48166078c84.elb.us-east-1.amazonaws.com"
+}
+
+variable "frontend_url" {
+  description = "DNS do Frontend (kubectl get svc)"
+  type        = string
+  default     = "http://a530484bff51547ddb49c6d82eaf3183-1718491015.us-east-1.elb.amazonaws.com:5000"
 }
 
 

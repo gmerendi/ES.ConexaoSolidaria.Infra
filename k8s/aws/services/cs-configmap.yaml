@@ -24,7 +24,7 @@ data:
   CAMPANHAS_POSTGRES_DB: "cs-campanhas"
 
   #Gateway
-  GATEWAY_URL: "http://localhost:5006"
+  GATEWAY_URL: "https://9airujgcjj.execute-api.us-east-1.amazonaws.com/Production/"
 
   #DynamoDB
   DYNAMODB_SERVICE_URL: "https://dynamodb.us-east-1.amazonaws.com"
@@ -34,6 +34,7 @@ data:
 
   #Aws
   AWS_REGION: "us-east-1"
+  AWS_DEFAULT_REGION: "us-east-1"
 
   #Redis
   REDIS_SERVICE_URL: "cs-redis.s0ntif.0001.use1.cache.amazonaws.com:6379"
