@@ -190,6 +190,7 @@ module "apigw" {
    # URLs dos ELBs — pegue com: kubectl get svc
    usuarios_api_elb    = var.usuarios_api_elb
    campanhas_api_elb  = var.campanhas_api_elb
+   frontend_url  = var.frontend_url
 
    # Rate Limiting
    rate_limit_rate  = 100

@@ -63,6 +63,21 @@ data:
         secureJsonData:
           password: zabbix
 
+
+      - name: DynamoDB-PG
+        uid: dynamo-pg
+        type: postgres
+        url: cs-dynamo-pg-proxy-svc:5450
+        user: grafana
+        database: dynamo
+        isDefault: false
+        editable: false
+        jsonData:
+            sslmode: disable
+            postgresVersion: 1400
+        secureJsonData:
+          password: grafana
+
   
   dashboards.yml: |
     apiVersion: 1

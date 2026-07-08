@@ -25,6 +25,11 @@ variable "campanhas_api_elb" {
   type        = string
 }
 
+variable "frontend_url" {
+  description = "DNS do Frontend"
+  type        = string
+}
+
 variable "rate_limit_rate" {
   description = "Requisições por segundo"
   type        = number
