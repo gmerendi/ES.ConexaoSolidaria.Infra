@@ -357,6 +357,13 @@ TODO
 #### 3.8) Fazer deploy dos manifestos Kubernetes
 Abra um powershell na raiz e digite os comandos abaixo:
 ```powershell
+kubectl create configmap cs-grafana-user-dash --from-file=docker-compose/observability/grafana/provisioning/dashboards/usuarios-api.json
+kubectl create configmap cs-grafana-campaign-dash --from-file=docker-compose/observability/grafana/provisioning/dashboards/campanhas-api.json
+kubectl create configmap cs-grafana-donation-dash --from-file=docker-compose/observability/grafana/provisioning/dashboards/donationworker.json
+kubectl create configmap cs-grafana-zabbix-dash --from-file=docker-compose/observability/grafana/provisioning/dashboards/zabbix.json
+kubectl create configmap cs-grafana-app-logs-dash --from-file=docker-compose/observability/grafana/provisioning/dashboards/cs-app-logs.json
+kubectl create configmap cs-grafana-audit-log-dash --from-file=docker-compose/observability/grafana/provisioning/dashboards/cs-audit-log.json
+
 kubectl apply -f k8s/aws/services/cs-aws-credentials.yaml
 kubectl apply -f k8s/aws/services/cs-aws-accounts.yaml
 kubectl apply -f k8s/aws/services/cs-configmap.yaml
@@ -455,73 +462,6 @@ kubectl apply -f k8s/aws/services/cs-grafana.yaml
 ```
 <br>
 ---
-
-----------------------------------------------------------------------------------------
-
-2. Criar imagens Docker
-Abrir terminal na pasta docker-compose e rodar o comando:
-docker-compose build
-
-
-3. Subir Imagens docker
- aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 641008666847.dkr.ecr.us-east-1.amazonaws.com
-
- docker tag cs-usuarios-api:latest 641008666847.dkr.ecr.us-east-1.amazonaws.com/cs-usuarios-api:latest
- docker tag cs-campanhas-api:latest 641008666847.dkr.ecr.us-east-1.amazonaws.com/cs-campanhas-api:latest
- docker tag cs-donationworker-api:latest 641008666847.dkr.ecr.us-east-1.amazonaws.com/cs-donationworker-api:latest
-
- docker push 641008666847.dkr.ecr.us-east-1.amazonaws.com/cs-usuarios-api:latest
- docker push 641008666847.dkr.ecr.us-east-1.amazonaws.com/cs-campanhas-api:latest
- docker push 641008666847.dkr.ecr.us-east-1.amazonaws.com/cs-donationworker-api:latest
---------------------------------------------------------------------------------------------------
-
-
-
- 6. Abrir Terminal na raiz
-
- kubectl apply -f k8s/aws/services/cs-aws-credentials.yaml
- kubectl apply -f k8s/aws/services/cs-aws-accounts.yaml
- kubectl apply -f k8s/aws/services/cs-configmap.yaml
- kubectl apply -f k8s/aws/services/cs-configzabbix.yaml
- kubectl apply -f k8s/aws/services/cs-configobs.yaml
- kubectl apply -f k8s/aws/services/cs-secrets.yaml
- kubectl apply -f k8s/aws/services/cs-services.yaml
- kubectl apply -f k8s/aws/services/cs-volumes.yaml
- kubectl apply -f k8s/aws/services/cs-elasticsearch.yaml
-
-  kubectl get pods
-
- * Aguardar os pods ficarem prontos
-
- kubectl apply -f k8s/aws/services/cs-usuarios.yaml
- kubectl apply -f k8s/aws/services/cs-campanhas.yaml
- kubectl apply -f k8s/aws/services/cs-donationworker.yaml
-
- kubectl apply -f k8s/aws/services/cs-zabbix.yaml
- kubectl apply -f k8s/aws/services/cs-prometheus.yaml
- kubectl apply -f k8s/aws/services/cs-grafana.yaml
- 
- 7. Dar deploy no Api Gateway
-
- kubectl get svc
-
-
- DELETAR
- kubectl delete -f k8s/aws/services/cs-usuarios.yaml
- kubectl delete -f k8s/aws/services/cs-campanhas.yaml
- kubectl delete -f k8s/aws/services/cs-donationworker.yaml
- 
-
-
- kubectl delete -f k8s/aws/services/cs-aws-credentials.yaml
- kubectl delete -f k8s/aws/services/cs-aws-accounts.yaml
- kubectl delete -f k8s/aws/services/cs-configmap.yaml
- kubectl delete -f k8s/aws/services/cs-configzabbix.yaml
- kubectl delete -f k8s/aws/services/cs-secrets.yaml
- kubectl delete -f k8s/aws/services/cs-services.yaml
- kubectl delete -f k8s/aws/services/cs-volumes.yaml
- kubectl delete -f k8s/aws/services/cs-elasticsearch.yaml
-
 
 
 ## Utilizando a aplicação
