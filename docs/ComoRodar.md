@@ -327,7 +327,8 @@ No powershell aberto na pasta infra, digite o comando:
 <br>
 O terraform irá verificar na conta se ja existe algum hardware criado, criando o plano e irá perguntar se pode realizar as ações.
 Responda "yes":<br/>
-<img width="398" height="291" alt="image" src="https://github.com/user-attachments/assets/3bbc4e3f-c71a-452d-99fe-c2726585324e" />
+<img width="487" height="384" alt="image" src="https://github.com/user-attachments/assets/442d1a34-9dfa-41a3-a81f-e8c78575b4fd" />
+
 <br/>
 <br/>
 Ao término da geração do hardware, ele irá mostrar o que foi criado:<br/>
@@ -344,7 +345,7 @@ O email inserido nesse campo será o e-mail utilizado para os testes de notifica
 Acesse o e-mail configurado e verifique aceite a subscrição proveniente da AWS. Caso esse passo não seja feito, os e-mails de notificação não serão enviados.
 
 <br><br>
-#### 3.6) Conectar o seu terminal ao cluster Kubernetes (EKS)
+#### 3.6) Fazer update de contexto do Kubernetes (EKS)
 ```powershell
 aws eks update-kubeconfig --region us-east-1 --name cs-cluster
 ```
@@ -368,7 +369,54 @@ kubectl apply -f k8s/aws/services/cs-elasticsearch.yaml
 kubectl apply -f k8s/aws/services/cs-zabbix.yaml
 
 ```
+<br><br>
+Aguarde os pods acima ficarem prontos - Status= Running, READY 1/1 (zabbix leva uns 3.5 minutos):<br>
+Teste com o comando:
+```powershell
+kubectl get pods
+```
+<br>
+Obs.: O POD cs-zabbix-init roda apenas na inicialização do zabbix para configurá-lo e pára, portanto o STATUS será Completed.
+<BR>
+<img width="556" height="120" alt="image" src="https://github.com/user-attachments/assets/9a7aebb1-50e5-4f2a-ba16-69a9373f109b" />
+<br><br>
 
+Dê o deploy dos microserviços: <br>
+```powershell
+kubectl apply -f k8s/aws/services/cs-usuarios.yaml
+kubectl apply -f k8s/aws/services/cs-campanhas.yaml
+kubectl apply -f k8s/aws/services/cs-donationworker.yaml
+
+```
+Aguarde os pods acima ficarem prontos:<br>
+Teste com o comando:
+```powershell
+kubectl get pods
+```
+<br>
+<img width="533" height="163" alt="image" src="https://github.com/user-attachments/assets/9024b037-cfa4-4fcb-a4cc-85874b0c1148" />
+<br><br>
+
+#### 3.9) Insira os serviços dos microserviços no api gateway
+Abra um powershell na raiz e digite os comandos abaixo:
+```powershell
+kubectl get svc
+
+```
+<br><br>
+Copie os endereços dos micro-serviçoes de campanhas e usuários no arquivo variables.tf na raiz da pasta terraform e passe a variável deploy_apigw para true: <br>
+<img width="2253" height="909" alt="image" src="https://github.com/user-attachments/assets/0a22dda2-d706-47a8-98df-5a38998891dc" />
+
+
+<br><br>
+Faça o terraform apply novamente , abrindo um powershell na pasta terraform:<br>
+```powershell
+.\terraform apply
+```
+<br>
+
+
+---
 
 ----------------------------------------------------------------------------------------
 
