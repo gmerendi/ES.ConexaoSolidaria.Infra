@@ -367,6 +367,7 @@ kubectl apply -f k8s/aws/services/cs-services.yaml
 kubectl apply -f k8s/aws/services/cs-volumes.yaml
 kubectl apply -f k8s/aws/services/cs-elasticsearch.yaml
 kubectl apply -f k8s/aws/services/cs-zabbix.yaml
+kubectl apply -f k8s/aws/services/cs-dynamo-proxy.yaml
 
 ```
 <br><br>
@@ -404,8 +405,9 @@ kubectl get svc
 
 ```
 <br><br>
-Copie os endereços dos micro-serviçoes de campanhas e usuários no arquivo variables.tf na raiz da pasta terraform e passe a variável deploy_apigw para true: <br>
-<img width="2253" height="909" alt="image" src="https://github.com/user-attachments/assets/0a22dda2-d706-47a8-98df-5a38998891dc" />
+Copie os endereços dos micro-serviçoes de campanhas,  usuários e frontend no arquivo variables.tf na raiz da pasta terraform e passe a variável deploy_apigw para true: <br>
+<img width="2437" height="933" alt="image" src="https://github.com/user-attachments/assets/eae88048-0e0b-4df1-8f47-75cbbb9fdd07" />
+
 
 
 <br><br>
@@ -414,8 +416,44 @@ Faça o terraform apply novamente , abrindo um powershell na pasta terraform:<br
 .\terraform apply
 ```
 <br>
+O api gateway será criado.<br>
+<img width="696" height="305" alt="image" src="https://github.com/user-attachments/assets/d00a1fc8-01b1-4af7-93d3-b0ed5c2f6065" />
+<br><br>
+
+#### 3.10) Insira a URL do API Gateway no arquivo cs-configmap.yaml
+Para descobrir o endereço do API Gateway:<br>
+```powershell
+$apiId = aws apigatewayv2 get-apis --query "Items[0].ApiId" --output text
+$stage = aws apigatewayv2 get-stages --api-id $apiId --query "Items[0].StageName" --output text
+$endpoint = "https://$apiId.execute-api.us-east-1.amazonaws.com/$stage"
+Write-Host "Endpoint: $endpoint"
+
+```
+<br>
+<img width="2433" height="532" alt="image" src="https://github.com/user-attachments/assets/8dc1160d-9cca-4a82-ae7f-9e55529f5864" />
+<br><br>
+
+Caso se deseje utilizar os micros-serviços diretamente do API Gateway, os comandos estão no arquivo [ComandosTesteApi.md]
+
+#### 3.11) Efetue o deploy do frontend
+```powershell
+kubectl apply -f k8s/aws/services/cs-configmap.yaml
+kubectl apply -f k8s/aws/services/cs-frontend.yaml
+```
+<br>
+
+O Frontend pode ser utilizado na url: <cs-frontend-svc.EXTERNAL-IP>:3000<br>
+<img width="2551" height="976" alt="image" src="https://github.com/user-attachments/assets/79a2af51-e3b4-454e-8502-b5b60cbd89b6" />
+<br><br>
 
 
+<br><br>
+#### 3.12) Efetue o deploy da Observabilidade
+```powershell
+kubectl apply -f k8s/aws/services/cs-prometheus.yaml
+kubectl apply -f k8s/aws/services/cs-grafana.yaml
+```
+<br>
 ---
 
 ----------------------------------------------------------------------------------------
