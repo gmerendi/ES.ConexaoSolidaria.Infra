@@ -18,6 +18,7 @@ Siga as instrucoes no ES.ConexaoSolidaria.Infra/docs/Como rodar
 ---
 O sistema possui os seguintes features implementados: <br>
 - [Sistema de Logging Estruturado](#sistema-de-logging-estruturado)
+- [Sistema de Caching - Redis](#sistema-de-caching)
 ---
 
 
@@ -25,7 +26,8 @@ O sistema possui os seguintes features implementados: <br>
 
 ### Visão Geral
 
-O sistema de logging do Conexão Solidária foi desenvolvido com uma arquitetura própria de **logging estruturado**, inspirada no Serilog, porém completamente customizada para as necessidades da plataforma. O design prioriza **observabilidade**, **rastreabilidade de ponta a ponta** e **flexibilidade de storage** — sem depender de bibliotecas de terceiros para a lógica central.  Logs podem ser gravados em base de dados caso a opção CustomLogging:SendLogToDB seja configurada para "True". Logs relativos a eventos, são sempre armazenados, independentemente dessa configuração, para que exista um Event Sourcing.
+O sistema de logging do Conexão Solidária foi desenvolvido com uma arquitetura própria de **logging estruturado**, inspirada no Serilog, porém completamente customizada para as necessidades da plataforma. O design prioriza **observabilidade**, **rastreabilidade de ponta a ponta** e **flexibilidade de storage** — sem depender de bibliotecas de terceiros para a lógica central.  Logs podem ser gravados em base de dados caso a opção CustomLogging:SendLogToDB seja configurada para "True". Logs relativos a eventos, são sempre armazenados, independentemente dessa configuração, para que exista um Event Sourcing.<br>
+Quando o projeto é rodado localmente, utilizamos um conteiner com a imagem do DynamoD para armazenar os logs. Caso a escolha seja rodar em Cloud AWS, a instância na nuvem do DynamoDb é utilizada.
 
 ---
 
