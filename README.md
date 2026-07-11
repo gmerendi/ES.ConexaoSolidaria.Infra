@@ -18,11 +18,11 @@ Siga as instrucoes no ES.ConexaoSolidaria.Infra/docs/Como rodar
 ---
 O sistema possui os seguintes features implementados: <br>
 - [Sistema de Logging Estruturado](#sistema-de-logging-estruturado)
-- [Sistema de Caching - Redis](#sistema-de-caching)
+- [Sistema de Cache - Redis](#sistema-de-cache)
 ---
 
 
-## 📋 Sistema de Logging Estruturado
+## Sistema de Logging Estruturado
 
 ### Visão Geral
 
@@ -146,11 +146,11 @@ Dados sensíveis como senhas e CPFs **nunca chegam aos logs** — o CPF é autom
 O TTL nativo do DynamoDB elimina automaticamente logs antigos sem necessidade de jobs de limpeza ou manutenção manual — mantendo os custos de storage controlados em produção.
 
 ---
-# ⚡ Sistema de Cache — Redis
+## ⚡ Sistema de Cache
 
-## Visão Geral
+### Visão Geral
 
-O Conexão Solidária utiliza **Redis** como camada de cache distribuído, implementando um `CacheService` que centraliza todas as operações de leitura e escrita em memória. O design prioriza **resiliência**, **segurança** e **transparência** — o sistema continua funcionando mesmo quando o Redis está indisponível, e o código de aplicação não precisa saber dos detalhes do cache.
+O Conexão Solidária utiliza **Redis** como camada de cache distribuído, implementando um `CacheService` que centraliza as operações de leitura e escrita em memória. O design prioriza **resiliência**, **segurança** e **transparência** — o sistema continua funcionando mesmo quando o Redis está indisponível, e o código de aplicação não precisa saber dos detalhes do cache.
 
 ---
 
@@ -175,7 +175,7 @@ CacheService             ← implementação Redis (StackExchange.Redis)
 
 ### 1. Cache de Entidades
 
-Usuários autenticados são armazenados em cache por **30 minutos** após a primeira busca no banco. Nas requisições seguintes, os dados são retornados diretamente do Redis — sem consultar o PostgreSQL.
+Usuários autenticados são armazenados em cache após a primeira busca no banco. Nas requisições seguintes, os dados são retornados diretamente do Redis — sem consultar o PostgreSQL. Caso os dados do usuario sejam modificados ou caso o usuario efetue logoff, os dados são removidos do cache, sendo inseridos novamente no próximo logon ou busca no banco.
 
 ```
 GET /api/v1/usuario?Email=user@test.com
