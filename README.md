@@ -22,7 +22,7 @@ O sistema possui os seguintes features implementados: <br>
 ---
 
 
-## Sistema de Logging Estruturado
+## 📋 Sistema de Logging Estruturado
 
 ### Visão Geral
 
@@ -144,6 +144,173 @@ Dados sensíveis como senhas e CPFs **nunca chegam aos logs** — o CPF é autom
 
 #### ♻️ Retenção Automática
 O TTL nativo do DynamoDB elimina automaticamente logs antigos sem necessidade de jobs de limpeza ou manutenção manual — mantendo os custos de storage controlados em produção.
+
+---
+# ⚡ Sistema de Cache — Redis
+
+## Visão Geral
+
+O Conexão Solidária utiliza **Redis** como camada de cache distribuído, implementando um `CacheService` que centraliza todas as operações de leitura e escrita em memória. O design prioriza **resiliência**, **segurança** e **transparência** — o sistema continua funcionando mesmo quando o Redis está indisponível, e o código de aplicação não precisa saber dos detalhes do cache.
+
+---
+
+## Arquitetura
+
+```
+Application / Domain
+      │
+      ▼
+ICacheService            ← contrato único exposto ao domínio
+      │
+      ▼
+CacheService             ← implementação Redis (StackExchange.Redis)
+      │
+      ├── Redis (leitura/escrita de dados)
+      └── Blacklist (tokens JWT revogados)
+```
+
+---
+
+## Funcionalidades
+
+### 1. Cache de Entidades
+
+Usuários autenticados são armazenados em cache por **30 minutos** após a primeira busca no banco. Nas requisições seguintes, os dados são retornados diretamente do Redis — sem consultar o PostgreSQL.
+
+```
+GET /api/v1/usuario?Email=user@test.com
+  │
+  ├── Cache HIT  → retorna em < 1ms  (Redis)
+  └── Cache MISS → busca no PostgreSQL → armazena no Redis → retorna
+```
+
+A chave segue o padrão `usuario:{email}`, garantindo unicidade e facilidade de invalidação:
+
+```csharp
+var cacheKey = $"usuario:{email}";
+var usuario  = await _cacheService.GetAsync<UsuarioDTO>(cacheKey);
+```
+
+### 2. Blacklist de Tokens JWT
+
+Quando um usuário faz logout ou tem a senha alterada, o token JWT atual é inserido na **blacklist do Redis** pelo tempo restante de validade. Mesmo que o token seja interceptado ou reutilizado, ele será rejeitado antes de chegar a qualquer endpoint.
+
+```
+POST /api/v1/auth/logout
+  │
+  └── Token → blacklist:{hash_do_token} → TTL = tempo restante do JWT
+```
+
+O middleware de autenticação verifica a blacklist em **cada requisição**, antes de qualquer processamento:
+
+```
+Request → [BlacklistMiddleware] → [AuthMiddleware] → Controller
+               │
+               └── Token na blacklist? → 401 Unauthorized (imediato)
+```
+
+---
+
+## Estratégias de Cache
+
+### Cache-Aside (Lazy Loading)
+
+O padrão adotado é **Cache-Aside**: a aplicação consulta o cache primeiro, e só acessa o banco se o dado não estiver disponível. Após buscar no banco, o dado é inserido no cache automaticamente.
+
+```
+┌─────────────┐    HIT     ┌───────┐
+│  Application │ ◄──────── │ Redis │
+│             │            └───────┘
+│             │  MISS           │
+│             │ ──────► ┌──────────────┐
+│             │ ◄─────── │ PostgreSQL   │
+│             │  SET     └──────────────┘
+└─────────────┘ ──────► ┌───────┐
+                         │ Redis │
+                         └───────┘
+```
+
+### Invalidação Proativa
+
+Quando um usuário é **alterado, suspenso, ativado ou removido**, o cache é invalidado imediatamente — garantindo que a próxima requisição busque os dados atualizados do banco:
+
+```csharp
+// Após qualquer alteração no usuário:
+var cacheKey = $"usuario:{command.Email}";
+await _cacheService.RemoveAsync(cacheKey);
+```
+
+---
+
+## Resiliência
+
+O `CacheService` foi projetado para **nunca derrubar a aplicação** em caso de falha do Redis. Todas as operações verificam a conectividade antes de executar e tratam exceções internamente:
+
+```csharp
+// O sistema continua funcionando — Redis indisponível não é erro fatal
+if (!_redis.IsConnected)
+{
+    _logger.LogWarning("Redis não está conectado - tentativa de busca.", ...);
+    return default; // retorna null → aplicação busca no banco
+}
+```
+
+| Cenário                    | Comportamento                                        |
+|----------------------------|------------------------------------------------------|
+| Redis indisponível (leitura) | Retorna `null` → busca no banco                    |
+| Redis indisponível (escrita) | Log de warning → operação ignorada silenciosamente |
+| Redis indisponível (blacklist)| Retorna `true` (bloqueio por segurança)            |
+| Erro de deserialização      | Log de erro → retorna `null` → busca no banco      |
+
+> **Decisão de segurança:** quando o Redis está indisponível para verificar a blacklist, o sistema assume que o token **está** na blacklist (`return true`). Isso garante que tokens revogados nunca sejam aceitos mesmo em cenários de falha — priorizando segurança em detrimento de disponibilidade temporária.
+
+---
+
+## Configuração das Chaves
+
+| Prefixo       | Exemplo                         | TTL       | Uso                              |
+|---------------|---------------------------------|-----------|----------------------------------|
+| `usuario:`    | `usuario:user@test.com`         | 30 min    | Dados do usuário autenticado     |
+| `blacklist:`  | `blacklist:{jwt_token_hash}`    | Dinâmico* | Tokens JWT revogados             |
+
+*O TTL da blacklist é calculado dinamicamente com base no tempo restante de expiração do JWT — o token expira do Redis exatamente quando expiraria naturalmente, sem deixar entradas desnecessárias.
+
+---
+
+## Observabilidade
+
+Todas as operações de cache são registradas no sistema de **logging estruturado**, incluindo hits, misses, erros e avisos de conectividade — visíveis nos dashboards do Grafana com filtro por `Caller = "CacheService"`:
+
+```
+[INFO]  Dado retornado do Redis.          { Key: "usuario:user@test.com" }
+[INFO]  Dado gravado no Redis.            { Key: "usuario:user@test.com" }
+[INFO]  Dado removido do Redis.           { Key: "usuario:user@test.com" }
+[WARN]  Token na Blacklist detectado.     { Key: "blacklist:eyJhbG..." }
+[WARN]  Redis não está conectado.         { Key: "usuario:user@test.com" }
+[ERROR] Erro ao deserializar chave.       { Key: "usuario:user@test.com" }
+```
+
+---
+
+## Benefícios
+
+### ⚡ Performance
+A camada de cache reduz drasticamente a latência em endpoints de leitura frequente. Dados de usuário — consultados em **cada requisição autenticada** para validação de perfil e permissões — são retornados em menos de 1ms pelo Redis, em vez dos 5-50ms de uma consulta ao PostgreSQL.
+
+### 🔒 Segurança com Blacklist
+A implementação de blacklist de tokens JWT resolve um problema clássico de autenticação stateless: **logout imediato e definitivo**. Em sistemas que usam apenas JWT sem blacklist, um token roubado permanece válido até expirar naturalmente. No Conexão Solidária, o logout invalida o token instantaneamente.
+
+### 🛡️ Resiliência por Design
+O Redis é tratado como **otimização**, não como dependência crítica. A aplicação degrada graciosamente quando o cache está indisponível — buscando os dados diretamente do banco — sem propagar erros para o usuário final.
+
+### 💰 Redução de Custo
+Em arquiteturas cloud com cobrança por operação de banco de dados (como RDS na AWS), a camada de cache reduz diretamente o número de consultas ao PostgreSQL — traduzindo em economia real de infraestrutura em produção.
+
+### 🔄 Consistência Garantida
+A invalidação proativa do cache em toda operação de escrita garante que os dados exibidos ao usuário **nunca sejam stale** após uma modificação — eliminando a classe de bugs de "dado desatualizado na tela".
+
+### 📊 Rastreabilidade
+Toda operação de cache é correlacionada ao `CorrelationId` da requisição original, permitindo reconstruir no Grafana exatamente quais dados foram lidos do cache e quais vieram do banco em qualquer trace específico.
 
 
 ### Observabilidade com Grafana - Inserir em grafana
