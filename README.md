@@ -16,7 +16,7 @@ FIAP <br>
 Siga as instrucoes no ES.ConexaoSolidaria.Infra/docs/Como rodar
 
 O sistema possui os seguintes features implementados: <br>
-- [Sistema de Logging Estruturado](##sistema-de-Logging-Estruturado)
+- [Sistema de Logging Estruturado](#sistema-de-logging-estruturado)
 
 
 ## Sistema de Logging Estruturado
