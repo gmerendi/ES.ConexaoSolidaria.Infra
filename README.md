@@ -1,5 +1,57 @@
-# ES.ConexaoSolidaria.Infra
+# Conexão Solidária — Infraestrutura
 
+Repositório de **Infraestrutura** da plataforma **Conexão Solidária**, desenvolvido para a ONG Esperança Solidária como parte do Hackathon POSTECH/FIAP. Utilizando esse repositório, é possivel rodar o projeto completo, localmente ou em Cloud AWS.
+
+Responsável por:
+- Rodar a configuração local no Docker Desktop utilizando docker-compose.
+- Rodar a configuração local no Docker Desktop, utilizando manifestos Kunernetes.
+- Criar a configuração em cloud IAAS utilizando Terraform.
+- Rodar a configuração em Cloud AWS, utilizando manifestos Kubernetes.
+
+---
+
+## Sumário
+- [Repositorios do Projeto](#repositorios-do-projeto)
+- [Arquitetura](#arquitetura)
+- [Stack Tecnológica](#stack-tecnológica)
+- [Perfis e Regras de Acesso](#perfis-e-regras-de-acesso)
+- [Endpoints](#endpoints)
+- [Como Rodar Localmente](#como-rodar-localmente)
+- [Variáveis de Ambiente](#variáveis-de-ambiente)
+- [Observabilidade](#observabilidade)
+- [Eventos de Domínio](#eventos-de-dominio)
+- [Testes](#testes)
+- [Estrutura do Projeto](#estrutura-do-projeto)
+- [Github Actions](#github-actions)
+
+---
+
+## Repositorios do Projeto
+
+| Repositório | Descrição |
+|---|---|
+| `conexao-solidaria-usuarios` | API de autenticação, JWT, RBAC e gestão de usuários |
+| `conexao-solidaria-campanhas` | API de campanhas com busca Elasticsearch |
+| `conexao-solidaria-doacoes` | API de doações e publicação de eventos |
+| `conexao-solidaria-worker` | Worker de processamento assíncrono de doações |
+| `conexao-solidaria-notificacoes` | Consumer de eventos e envio de emails |
+| `conexao-solidaria-gateway` | API Gateway (YARP) + GraphQL Federation |
+| `conexao-solidaria-frontend` | Frontend Blazor WebAssembly |
+| `conexao-solidaria-mobile` | App mobile .NET MAUI + StrawberryShake |
+| `conexao-solidaria-infra` | *(este repositório)* K8s, Helm, docker-compose, documentação |
+
+---
+
+## Documentação
+
+- [Casos de Uso](./docs/use-cases/)
+- [Diagramas](./docs/diagrams/)
+- [User Stories](./docs/user-stories/)
+- [ADR — Architecture Decision Records](./docs/adr/)
+- [Matriz de Rastreabilidade](./docs/traceability-matrix/)
+- [Glossário de Domínio](./docs/glossary/)
+- [LGPD Compliance](./docs/lgpd/)
+- [Contratos de API](./docs/api-contracts/)
 - Crie as pastas:<br>
 FIAP <br>
 |---- ES.ConexaoSolidaria.Usuarios <br>
