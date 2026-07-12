@@ -226,7 +226,12 @@ CacheService             ← implementação Redis (StackExchange.Redis)
 
 ### 1. Cache de Entidades
 
-Usuários autenticados são armazenados em cache após a primeira busca no banco. Nas requisições seguintes, os dados são retornados diretamente do Redis — sem consultar o PostgreSQL. Caso os dados do usuario sejam modificados ou caso o usuario efetue logoff, os dados são removidos do cache, sendo inseridos novamente no próximo logon ou busca no banco.
+Entidades são armazenadas em cache após a primeira busca no banco. Nas requisições seguintes, os dados são retornados diretamente do Redis — sem consultar o PostgreSQL. Caso os dados da entidade sejam modificados ou caso a entidade seja deletada, os dados são removidos do cache.
+Para as campanhas, o cache possui TTL configuravel.  Campanhas ativas e não ativas, possuem ttls diferentes, pois a campanha ativa tem o seu total arrecadado constantemente modificado.  O TTL para campanhas ativas é de 1 minuto (o total arrecadado não tem impacto na operação se houver delay de 1 minuto), mas pode ser modificado via variavel de ambiente.:<br>
+<br>
+Cache:CampanhaAtivaTTLSeconds: "60"
+Cache:CampanhaNaoAtivaTTLSeconds: "86400"
+<br>
 
 ```
 GET /api/v1/usuario?Email=user@test.com
@@ -235,10 +240,10 @@ GET /api/v1/usuario?Email=user@test.com
   └── Cache MISS → busca no PostgreSQL → armazena no Redis → retorna
 ```
 
-A chave segue o padrão `usuario:{email}`, garantindo unicidade e facilidade de invalidação:
+A chave segue o padrão `entidade:{identificador}`, garantindo unicidade e facilidade de invalidação:
 
 ```csharp
-var cacheKey = $"usuario:{email}";
+var cacheKey = $"entidade:{identificador}";
 var usuario  = await _cacheService.GetAsync<UsuarioDTO>(cacheKey);
 ```
 
