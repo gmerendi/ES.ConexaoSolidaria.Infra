@@ -37,7 +37,6 @@ Responsável por:
 | [ES.ConexaoSolidaria.Frontend](https://github.com/gmerendi/ES.ConexaoSolidaria.Frontend)  | Frontend Blazor | Projeto local ou AWS | NA |
 | [ES.ConexaoSolidaria.Notificacoes](https://github.com/gmerendi/ES.ConexaoSolidaria.Notificacoes) | Consumer de eventos e envio de emails | Projeto local | SNS |
 | [ES.ConexaoSolidaria.Gateway](https://github.com/gmerendi/ES.ConexaoSolidaria.Gateway) | API Gateway (YARP) | Projeto local | AWS Api Gateway |
-
 | [ES.ConexaoSolidaria.Infra](https://github.com/gmerendi/ES.ConexaoSolidaria.Infra) | *(este repositório)* K8s, docker-compose, terraform e documentação | NA | NA | 
 
 ---
