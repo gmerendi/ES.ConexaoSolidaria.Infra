@@ -28,16 +28,16 @@ Responsável por:
 
 ## Repositorios do Projeto
 
-| Repositório | Descrição |
-|---|---|
-| [ES.ConexaoSolidaria.Usuarios](https://github.com/gmerendi/ES.ConexaoSolidaria.Usuarios) | API de autenticação, JWT, RBAC e gestão de usuários |
-| `conexao-solidaria-campanhas` | API de campanhas com busca Elasticsearch |
-| `conexao-solidaria-doacoes` | API de doações e publicação de eventos |
-| `conexao-solidaria-worker` | Worker de processamento assíncrono de doações |
-| `conexao-solidaria-notificacoes` | Consumer de eventos e envio de emails |
-| `conexao-solidaria-gateway` | API Gateway (YARP) + GraphQL Federation |
-| `conexao-solidaria-frontend` | Frontend Blazor WebAssembly |
-| `conexao-solidaria-mobile` | App mobile .NET MAUI + StrawberryShake |
+| Repositório | Descrição | Roda onde | Substituto no Cloud |
+|---|---|---|---|
+| [ES.ConexaoSolidaria.Usuarios](https://github.com/gmerendi/ES.ConexaoSolidaria.Usuarios) | API de autenticação, JWT, RBAC e gestão de usuários | Projeto local ou AWS | NA |
+| [ES.ConexaoSolidaria.Campanhas](https://github.com/gmerendi/ES.ConexaoSolidaria.Campanhas)  | API de gerenciamento de campanhas | Projeto local ou AWS | NA |
+| [ES.ConexaoSolidaria.Worker](https://github.com/gmerendi/ES.ConexaoSolidaria.Worker)  | Worker de processamento de doações | Projeto local ou AWS | NA |
+| [ES.ConexaoSolidaria.DynamoPgProxy](https://github.com/gmerendi/ES.ConexaoSolidaria.DynamoPgProxy)  | Proxy para disponibilizar dados do Dynamo no Grafana | Projeto local ou AWS | NA |
+| [ES.ConexaoSolidaria.Frontend](https://github.com/gmerendi/ES.ConexaoSolidaria.Frontend)  | Frontend Blazor | Projeto local ou AWS | NA |
+| [ES.ConexaoSolidaria.Notificacoes](https://github.com/gmerendi/ES.ConexaoSolidaria.Notificacoes) | Consumer de eventos e envio de emails | Projeto local | SNS |
+| [ES.ConexaoSolidaria.Gateway](https://github.com/gmerendi/ES.ConexaoSolidaria.Gateway) | API Gateway (YARP) | Projeto local | AWS Api Gateway |
+
 | `conexao-solidaria-infra` | *(este repositório)* K8s, Helm, docker-compose, documentação |
 
 ---
