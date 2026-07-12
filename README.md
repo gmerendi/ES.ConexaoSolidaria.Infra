@@ -30,7 +30,7 @@ Responsável por:
 
 | Repositório | Descrição |
 |---|---|
-| `conexao-solidaria-usuarios` | API de autenticação, JWT, RBAC e gestão de usuários |
+| [ES.ConexaoSolidaria.Usuarios](https://github.com/gmerendi/ES.ConexaoSolidaria.Usuarios) | API de autenticação, JWT, RBAC e gestão de usuários |
 | `conexao-solidaria-campanhas` | API de campanhas com busca Elasticsearch |
 | `conexao-solidaria-doacoes` | API de doações e publicação de eventos |
 | `conexao-solidaria-worker` | Worker de processamento assíncrono de doações |
