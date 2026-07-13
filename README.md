@@ -2828,8 +2828,8 @@ A plataforma possui testes unitários nos microsserviços abaixo, que rodam auto
 | `Campanhas.Test` | 78 | `tests/Campanhas.Test` |
 | `DonationWorker.Tests` | 58 | `tests/DonationWorker.Tests` |
 | `DynamoPgProxy.Tests` | 49 | `tests/test_pg_dynamo_proxy.py` |
-| `Frontend.Tests` | xx | `tests/Frontend.Tests` |
-| **Total** | **** | 303 |
+| `Frontend.Tests` | 73 | `tests/Frontend.Tests` |
+| **Total** | **** | 376 |
 
 ---
 
