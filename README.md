@@ -1382,7 +1382,7 @@ Worker Doações
 
 ---
 
-## Eventos Consumidos
+### Eventos Consumidos
 
 **Arquivo:** `Domain/Events/DomainEvents.cs`
 
@@ -1391,7 +1391,7 @@ Worker Doações
 | `UserCreatedEvent` | `user-created-queue` | Boas-vindas ao novo usuário |
 | `DonationProcessedEvent` | `donation-processed-queue` | Confirmação de doação processada |
 
-### Estrutura dos eventos
+#### Estrutura dos eventos
 
 ```csharp
 // Novo usuário cadastrado
@@ -1415,9 +1415,9 @@ record DonationProcessedEvent(
 
 ---
 
-## Consumers (local)
+### Consumers (local)
 
-### UserCreatedEventConsumer
+#### UserCreatedEventConsumer
 
 **Arquivo:** `Consumers/UserCreatedEventConsumer.cs`
 
@@ -1429,7 +1429,7 @@ UserCreatedEvent recebido
        └─ E-mail HTML com boas-vindas e link para o site
 ```
 
-### DonationProcessedEventConsumer
+#### DonationProcessedEventConsumer
 
 **Arquivo:** `Consumers/DonationProcessedEventConsumer.cs`
 
@@ -1443,7 +1443,7 @@ DonationProcessedEvent recebido
 
 ---
 
-## Transporte por Ambiente
+### Transporte por Ambiente
 
 | Ambiente | Broker | Serviço de E-mail |
 |---|---|---|
@@ -1452,13 +1452,13 @@ DonationProcessedEvent recebido
 
 ---
 
-## Configuração LOCAL — RabbitMQ + Mailpit
+### Configuração LOCAL — RabbitMQ + Mailpit
 
 **Arquivo:** `Infrastructure/Extensions/MessagingExtensions.cs`
 
 O **Mailpit** captura todos os e-mails enviados e os exibe em uma interface web em `http://localhost:8025` — sem enviar nada de verdade. Ideal para desenvolvimento e testes.
 
-### Política de Retry — RabbitMQ
+#### Política de Retry — RabbitMQ
 
 Dois níveis de retry garantem que falhas transitórias não perdem mensagens:
 
@@ -1474,11 +1474,11 @@ Se todas as tentativas falharem, a mensagem vai para a fila `_error` do RabbitMQ
 
 ---
 
-## Configuração AWS — SQS + Lambda + SNS + Mailtrap
+### Configuração AWS — SQS + Lambda + SNS + Mailtrap
 
 Em produção, o worker de notificações é substituído por uma **AWS Lambda Python** que consome diretamente do SQS e usa a **API do Mailtrap** para envio de e-mails.
 
-### Filas SQS
+#### Filas SQS
 
 | Fila | Propósito | Retenção | Visibility Timeout | Dead Letter |
 |---|---|---|---|---|
@@ -1487,7 +1487,7 @@ Em produção, o worker de notificações é substituído por uma **AWS Lambda P
 
 Cada fila tem uma **Dead Letter Queue (DLQ)** — após `maxReceiveCount: 3` falhas, a mensagem é movida para a DLQ para investigação sem ser perdida.
 
-### Lambda de E-mail
+#### Lambda de E-mail
 
 **Runtime:** Python 3.9  
 **Handler:** `email_sending.handler`  
@@ -1503,7 +1503,7 @@ O `batch_size: 5` processa até 5 mensagens por invocação — balanceando thro
 
 O `ReportBatchItemFailures` permite que a Lambda reporte falhas parciais — se 3 de 5 mensagens falharem, apenas as 3 voltam para a fila, sem reprocessar as 2 que já foram enviadas com sucesso.
 
-### SNS para notificações operacionais
+#### SNS para notificações operacionais
 
 Um tópico SNS `email-notifications` permite que a Lambda publique os e-mails para um e-mail cadastrado para testes no ambiente AWS LAB. Essa foi a maneira encontrada para enviar os e-mails pois o serviço SES (Simple Email Service) não é disponível utilizando o LabRole.
 
@@ -1511,7 +1511,7 @@ Um tópico SNS `email-notifications` permite que a Lambda publique os e-mails pa
 Lambda → SNS topic (email-notifications) → e-mail do usuario (configuravel no terraform).
 ```
 
-### Variáveis de ambiente da Lambda - terraform
+#### Variáveis de ambiente da Lambda - terraform
 
 | Variável | Descrição |
 |---|---|
@@ -1523,9 +1523,9 @@ Lambda → SNS topic (email-notifications) → e-mail do usuario (configuravel n
 
 ---
 
-## Fluxo Completo por Evento
+### Fluxo Completo por Evento
 
-### Novo usuário cadastrado
+#### Novo usuário cadastrado
 
 ```
 1. Usuário se cadastra via POST /api/v1/usuario
@@ -1535,7 +1535,7 @@ Lambda → SNS topic (email-notifications) → e-mail do usuario (configuravel n
 4. Usuário recebe e-mail de boas-vindas com confirmação do CPF
 ```
 
-### Doação processada
+#### Doação processada
 
 ```
 1. Usuário registra doação via POST /api/v1/Doacoes
@@ -1548,7 +1548,7 @@ Lambda → SNS topic (email-notifications) → e-mail do usuario (configuravel n
 
 ---
 
-## Benefícios
+### Benefícios
 
 - 📨 **Desacoplamento total** — microsserviços publicam eventos e esquecem; o worker cuida de quando e como o e-mail é enviado
 
