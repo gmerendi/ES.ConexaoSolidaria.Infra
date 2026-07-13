@@ -51,6 +51,8 @@ Responsável por:
 - [Glossário de Domínio](./docs/glossary/)
 - [LGPD Compliance](./docs/lgpd/)
 - [Contratos de API](./docs/api-contracts/)
+
+
 - Crie as pastas:<br>
 FIAP <br>
 |---- ES.ConexaoSolidaria.Usuarios <br>
@@ -70,6 +72,7 @@ Siga as instrucoes no ES.ConexaoSolidaria.Infra/docs/Como rodar
 O sistema possui os seguintes features implementados: <br>
 - [Sistema de Logging Estruturado](#sistema-de-logging-estruturado)
 - [Sistema de Cache - Redis](#sistema-de-cache)
+- [Sistema de Busca Avançada - Elasticsearch](#sistema-de-busca-avancada-elasticsearch)
 ---
 
 
@@ -205,7 +208,7 @@ O Conexão Solidária utiliza **Redis** como camada de cache distribuído, imple
 
 ---
 
-## Arquitetura
+### Arquitetura
 
 ```
 Application / Domain
@@ -222,9 +225,9 @@ CacheService             ← implementação Redis (StackExchange.Redis)
 
 ---
 
-## Funcionalidades
+### Funcionalidades
 
-### 1. Cache de Entidades
+#### 1. Cache de Entidades
 
 Entidades são armazenadas em cache após a primeira busca no banco. Nas requisições seguintes, os dados são retornados diretamente do Redis — sem consultar o PostgreSQL. Caso os dados da entidade sejam modificados ou caso a entidade seja deletada, os dados são removidos do cache.
 Para as campanhas, o cache possui TTL configuravel.  Campanhas ativas e não ativas, possuem ttls diferentes, pois a campanha ativa tem o seu total arrecadado constantemente modificado.  O TTL para campanhas ativas é de 1 minuto (o total arrecadado não tem impacto na operação se houver delay de 1 minuto), mas pode ser modificado via variavel de ambiente.:<br>
@@ -247,7 +250,7 @@ var cacheKey = $"entidade:{identificador}";
 var usuario  = await _cacheService.GetAsync<UsuarioDTO>(cacheKey);
 ```
 
-### 2. Blacklist de Tokens JWT
+#### 2. Blacklist de Tokens JWT
 
 Quando um usuário faz logout ou tem a senha alterada, o token JWT atual é inserido na **blacklist do Redis** pelo tempo restante de validade. Mesmo que o token seja interceptado ou reutilizado, ele será rejeitado antes de chegar a qualquer endpoint.
 
@@ -267,9 +270,9 @@ Request → [BlacklistMiddleware] → [AuthMiddleware] → Controller
 
 ---
 
-## Estratégias de Cache
+### Estratégias de Cache
 
-### Cache-Aside (Lazy Loading)
+#### Cache-Aside (Lazy Loading)
 
 O padrão adotado é **Cache-Aside**: a aplicação consulta o cache primeiro, e só acessa o banco se o dado não estiver disponível. Após buscar no banco, o dado é inserido no cache automaticamente.
 
@@ -286,19 +289,19 @@ O padrão adotado é **Cache-Aside**: a aplicação consulta o cache primeiro, e
                          └───────┘
 ```
 
-### Invalidação Proativa
+#### Invalidação Proativa
 
-Quando um usuário é **alterado, suspenso, ativado ou removido**, o cache é invalidado imediatamente — garantindo que a próxima requisição busque os dados atualizados do banco:
+Quando uma entidade é **alterada**, o cache é invalidado imediatamente — garantindo que a próxima requisição busque os dados atualizados do banco:
 
 ```csharp
-// Após qualquer alteração no usuário:
+// Exemplo: Após qualquer alteração no usuário:
 var cacheKey = $"usuario:{command.Email}";
 await _cacheService.RemoveAsync(cacheKey);
 ```
 
 ---
 
-## Resiliência
+#### Resiliência
 
 O `CacheService` foi projetado para **nunca derrubar a aplicação** em caso de falha do Redis. Todas as operações verificam a conectividade antes de executar e tratam exceções internamente:
 
@@ -322,14 +325,16 @@ if (!_redis.IsConnected)
 
 ---
 
-## Configuração das Chaves
-
-| Prefixo       | Exemplo                         | TTL       | Uso                              |
+### Configuração das Chaves
+ 
+ Prefixo       | Exemplo                         | TTL       | Uso                              |
 |---------------|---------------------------------|-----------|----------------------------------|
 | `usuario:`    | `usuario:user@test.com`         | 30 min    | Dados do usuário autenticado     |
 | `blacklist:`  | `blacklist:{jwt_token_hash}`    | Dinâmico* | Tokens JWT revogados             |
+| `campanha:`  | `camnpanha:{801ac5fa-7399-4ee2-9f2d-1a111edb9ca4}`    | Dinâmico** | Dados da campanha            |
 
 *O TTL da blacklist é calculado dinamicamente com base no tempo restante de expiração do JWT — o token expira do Redis exatamente quando expiraria naturalmente, sem deixar entradas desnecessárias.
+** O TTL da campanha é configurado via environment variable. Como default, temos 1 minuto para campanhas ativas (para permitir atualização de valor arrecadado) e de 1 dia para campanhas não ativas (que podem ser consultadas pelo Gestor).
 
 ---
 
@@ -368,6 +373,89 @@ A invalidação proativa do cache em toda operação de escrita garante que os d
 ### 📊 Rastreabilidade
 Toda operação de cache é correlacionada ao `CorrelationId` da requisição original, permitindo reconstruir no Grafana exatamente quais dados foram lidos do cache e quais vieram do banco em qualquer trace específico.
 
+---
+
+##    Sistema de Busca Avançada - Elasticsearch
+
+O sistema de busca de campanhas utiliza **Elasticsearch 8.11** para oferecer uma experiência de busca rápida, tolerante a erros de digitação e inteligente.
+
+---
+
+### Como funciona
+
+Ao buscar por uma campanha, o sistema executa simultaneamente duas estratégias de busca sobre os campos `titulo`, `descricao`, `statusCampanha`, `dataInicio` e `dataFim`:
+
+**1. Busca Fuzzy (MultiMatch — BestFields)**  
+Tolera erros de digitação. Se o usuário digitar "Alimntos" em vez de "Alimentos", o sistema ainda encontra a campanha correta. O campo `titulo` tem peso 3x maior que os demais — campanhas com o termo no título aparecem primeiro.
+
+**2. Busca por Prefixo (MultiMatch — BoolPrefix)**  
+Busca enquanto o usuário digita. Ao digitar "Camp", já retorna campanhas que começam com esse termo, oferecendo uma experiência de busca em tempo real.
+
+---
+
+### Indexação
+
+Cada campanha é indexada automaticamente no Elasticsearch quando:
+- Uma campanha é **criada**
+- Uma campanha é **alterada** (título, descrição, status, datas)
+- Uma campanha é **cancelada** ou **concluída**
+
+> O campo `valorArrecadado` **não é indexado** no Elasticsearch — ele é lido diretamente do banco de dados para garantir sempre o valor mais atualizado, evitando reindexação a cada doação recebida.
+
+---
+
+### Dados indexados por campanha
+
+| Campo | Tipo | Descrição |
+|---|---|---|
+| `guid` | keyword | Identificador único |
+| `titulo` | text | Nome da campanha (peso 3x na busca) |
+| `descricao` | text | Descrição completa |
+| `statusCampanha` | keyword | ATIVA, CANCELADA, CONCLUÍDA |
+| `dataInicio` | text | Data de início da campanha |
+| `dataFim` | text | Data de encerramento |
+
+---
+
+### Tolerância a erros
+
+A busca utiliza `Fuzziness: AUTO`, que ajusta automaticamente a tolerância com base no tamanho do termo:
+
+| Tamanho do termo | Erros tolerados |
+|---|---|
+| 1–2 caracteres | 0 (busca exata) |
+| 3–5 caracteres | 1 erro |
+| 6+ caracteres | 2 erros |
+
+---
+
+### Infraestrutura
+
+- **Modo:** `single-node` (adequado para o ambiente atual)
+- **Segurança:** `xpack.security` desabilitado na rede interna do cluster
+- **Persistência:** volume dedicado via PVC no Kubernetes
+- **Memória:** mínimo 1Gi, limite 1.5Gi (`ES_JAVA_OPTS: -Xms512m -Xmx512m`)
+- **Health check:** `/\_cluster/health?wait_for_status=yellow`
+
+--- 
+
+### Benefícios
+
+- **Velocidade** — respostas em milissegundos, independente do volume de campanhas cadastradas, sem impacto no banco de dados principal
+
+- **Tolerância a erros de digitação** — o usuário pode errar a escrita e ainda encontrar a campanha correta, reduzindo a fricção na experiência de busca
+
+- **Busca em tempo real** — resultados aparecem enquanto o usuário digita, sem necessidade de pressionar "buscar"
+
+- **Relevância inteligente** — campanhas com o termo buscado no título aparecem antes das que têm o termo apenas na descrição, entregando os resultados mais relevantes primeiro
+
+- **Escalabilidade** — o Elasticsearch escala horizontalmente, suportando crescimento no volume de campanhas e de usuários simultâneos sem degradação de performance
+
+- **Desacoplamento** — a busca não concorre com as operações transacionais do banco de dados PostgreSQL, garantindo que buscas intensas não impactem o cadastro de campanhas e doações
+
+- **Índice sempre atualizado** — qualquer alteração em uma campanha é refletida automaticamente no índice, garantindo que os resultados de busca estejam sempre sincronizados com o estado real do sistema
+
+---
 
 ### Observabilidade com Grafana - Inserir em grafana
 
