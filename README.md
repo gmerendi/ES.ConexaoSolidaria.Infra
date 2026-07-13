@@ -13,12 +13,11 @@ Responsável por:
 ## Sumário
 - [Repositorios do Projeto](#repositorios-do-projeto)
 - [Arquitetura](#arquitetura)
-- [Stack Tecnológica](#stack-tecnológica)
+- [Stack Tecnológica](#stack-tecnologica)
+- [Documentaçao](#documentaçao)
 - [Perfis e Regras de Acesso](#perfis-e-regras-de-acesso)
 - [Endpoints](#endpoints)
 - [Como Rodar Localmente](#como-rodar-localmente)
-- [Observabilidade](#observabilidade)
-- [Testes](#testes)
 
 ---
 
@@ -35,6 +34,182 @@ Responsável por:
 | [ES.ConexaoSolidaria.Gateway](https://github.com/gmerendi/ES.ConexaoSolidaria.Gateway) | API Gateway (YARP) | Projeto local | AWS Api Gateway |
 | [ES.ConexaoSolidaria.Infra](https://github.com/gmerendi/ES.ConexaoSolidaria.Infra) | *(este repositório)* K8s, docker-compose, terraform e documentação | NA | NA | 
 
+<br><br>
+Crie as pastas abaixo para clonar os repositórios:<br>
+C:\FIAP\ <br>
+|---- ES.ConexaoSolidaria.Usuarios <br>
+|---- ES.ConexaoSolidaria.Campanhas <br>
+|---- ES.ConexaoSolidaria.Infra <br>
+|---- ES.ConexaoSolidaria.Notificacoes <br>
+|---- ES.ConexaoSolidaria.Worker <br>
+|---- ES.ConexaoSolidaria.Gateway <br>
+|---- ES.ConexaoSolidaria.Frontend <br>
+|---- ES.ConexaoSolidaria.DynamoPgProxy <br>
+
+<br>
+
+---
+
+## Arquitetura
+
+
+---
+
+## Stack Tecnologica
+
+### Linguagens
+
+| Linguagem | Versão | Uso |
+|---|---|---|
+| **C#** | .NET 8 | Microsserviços, Workers, Gateway, Frontend |
+| **Python** | 3.12 | DynamoDB PostgreSQL Proxy |
+| **HCL** | Terraform ~5.0 | Provisionamento de infraestrutura AWS |
+| **YAML** | — | Manifests Kubernetes, GitHub Actions |
+
+---
+
+### Backend — Microsserviços
+
+| Tecnologia | Versão | Uso |
+|---|---|---|
+| **ASP.NET Core** | 8.0 | Web API (Usuários, Campanhas) |
+| **Entity Framework Core** | 8.0.0 | ORM — PostgreSQL |
+| **Npgsql EF Core** | 8.0.0 | Driver PostgreSQL para EF Core |
+| **MassTransit** | 8.0.0 | Abstração de mensageria (RabbitMQ / SQS) |
+| **MassTransit.RabbitMQ** | 8.0.0 | Transporte RabbitMQ |
+| **MassTransit.AmazonSQS** | 8.0.0 | Transporte Amazon SQS |
+| **Elastic.Clients.Elasticsearch** | 8.11.0 | Client Elasticsearch |
+| **StackExchange.Redis** | 2.13.17 | Client Redis |
+| **BCrypt.Net-Next** | 4.2.0 | Hash de senhas |
+| **Swashbuckle.AspNetCore** | 6.6.2 | Geração do Swagger/OpenAPI |
+| **prometheus-net** | 8.2.1 | Exposição de métricas Prometheus |
+| **prometheus-net.AspNetCore** | 8.2.1 | Middleware de métricas HTTP |
+| **AWSSDK.DynamoDBv2** | 4.0.19 | Client DynamoDB (logs e auditoria) |
+| **AWSSDK.SQS** | 4.0.3.8 | Client SQS |
+| **AWSSDK.Extensions.NETCore.Setup** | 4.0.4.3 | Integração AWS com DI do .NET |
+| **Microsoft.AspNetCore.Authentication.JwtBearer** | 8.0.0 | Validação JWT |
+| **System.IdentityModel.Tokens.Jwt** | 8.19.1 | Geração e leitura de tokens JWT |
+| **Microsoft.Extensions.Diagnostics.HealthChecks** | 8.0.0 | Health checks |
+
+---
+
+### Worker Service
+
+| Tecnologia | Versão | Uso |
+|---|---|---|
+| **Microsoft.Extensions.Hosting** | 8.0.0 | Host para Worker Service |
+| **MassTransit.RabbitMQ** | 8.0.0 | Consumer RabbitMQ |
+| **MassTransit.AmazonSQS** | 8.0.0 | Consumer SQS |
+| **Entity Framework Core** | 8.0.0 | Persistência no PostgreSQL |
+
+---
+
+### Gateway
+
+| Tecnologia | Versão | Uso |
+|---|---|---|
+| **YARP.ReverseProxy** | 2.3.0 | Reverse proxy e roteamento |
+| **Microsoft.AspNetCore.Authentication.JwtBearer** | 8.0.0 | Validação JWT no gateway |
+| **prometheus-net** | 8.2.1 | Métricas do gateway |
+
+---
+
+### Frontend
+
+| Tecnologia | Versão | Uso |
+|---|---|---|
+| **Blazor WebAssembly** | 8.0.27 | SPA em C# rodando no browser |
+| **MudBlazor** | 9.5.0 | Componentes UI Material Design |
+| **Blazored.LocalStorage** | 4.5.0 | Persistência do JWT no browser |
+| **System.IdentityModel.Tokens.Jwt** | 8.0.2 | Leitura de claims do JWT no cliente |
+| **Bootstrap** | 5 | Grid e utilitários CSS |
+
+---
+
+### Notificações
+
+| Tecnologia | Versão | Uso |
+|---|---|---|
+| **MailKit** | 4.16.0 | Envio de e-mail via SMTP |
+| **MassTransit.RabbitMQ** | 8.0.0 | Consumer de eventos |
+
+---
+
+### Testes
+
+| Tecnologia | Versão | Uso |
+|---|---|---|
+| **xUnit** | 2.5.3 | Framework de testes |
+| **Moq** | 4.20.72 | Mock de dependências |
+| **FluentAssertions** | 6.12.1 | Assertions expressivas |
+| **coverlet** | 6.0.2 | Cobertura de código |
+| **BCrypt.Net-Next** | 4.2.0 | Testes de hash de senha |
+
+---
+
+### Infraestrutura — Serviços de Dados
+
+| Serviço | Versão | Uso |
+|---|---|---|
+| **PostgreSQL** | 15 Alpine | Banco relacional (Usuários, Campanhas, Doações) |
+| **Redis** | Alpine | Cache de sessão, token blacklist |
+| **Amazon DynamoDB** | — | Logs de aplicação (`cs-app-logs`) e auditoria (`cs-audit-log`) |
+| **Elasticsearch** | 8.11.0 | Busca full-text de campanhas |
+| **RabbitMQ** | 4.1.6 management Alpine | Broker de mensagens (LOCAL) |
+| **Amazon SQS** | — | Broker de mensagens (LAB/AWS) |
+
+---
+
+### Infraestrutura — Observabilidade
+
+| Serviço | Versão | Uso |
+|---|---|---|
+| **Prometheus** | v2.53.0 | Coleta de métricas |
+| **Grafana** | 11.1.0 | Dashboards e visualização |
+| **Zabbix Appliance** | Alpine latest | Monitoramento de infraestrutura |
+| **Zabbix Agent** | Alpine latest | Agente de coleta no servidor |
+| **Mailpit** | Latest | Captura de e-mails em desenvolvimento |
+
+---
+
+### Infraestrutura — AWS
+
+| Serviço | Uso |
+|---|---|
+| **EKS (Elastic Kubernetes Service)** | Orquestração de containers |
+| **ECR (Elastic Container Registry)** | Registro de imagens Docker |
+| **RDS PostgreSQL** | Banco relacional gerenciado |
+| **ElastiCache Redis** | Cache gerenciado |
+| **Amazon SQS** | Fila de mensagens gerenciada |
+| **Amazon DynamoDB** | Banco NoSQL gerenciado |
+| **AWS API Gateway v2** | Gateway HTTP gerenciado |
+| **AWS Lambda (Python 3.9)** | Envio de e-mails transacionais |
+| **Amazon SNS** | Notificações operacionais |
+| **Amazon Mailtrap** | Envio de e-mails (LAB) |
+
+---
+
+### Infraestrutura — IaC e CI/CD
+
+| Tecnologia | Versão | Uso |
+|---|---|---|
+| **Terraform** | AWS Provider ~5.0 | Provisionamento de infraestrutura AWS |
+| **Kubernetes** | — | Orquestração de containers |
+| **Docker** | — | Containerização |
+| **Nginx** | Alpine | Servidor de arquivos estáticos (Frontend) |
+| **GitHub Actions** | — | CI/CD automatizado |
+| **Amazon ECR** | — | Registro de imagens Docker |
+
+---
+
+### DynamoDB PG Proxy
+
+| Tecnologia | Versão | Uso |
+|---|---|---|
+| **Python** | 3.12 Alpine | Runtime |
+| **boto3** | 1.34.0 | Client DynamoDB |
+| **asyncio** | stdlib | Servidor TCP assíncrono |
+| **flake8** | — | Lint (CI) |
 ---
 
 ## Documentação
@@ -49,18 +224,7 @@ Responsável por:
 - [Contratos de API](./docs/api-contracts/)
 
 
-- Crie as pastas:<br>
-FIAP <br>
-|---- ES.ConexaoSolidaria.Usuarios <br>
-|---- ES.ConexaoSolidaria.Campanhas <br>
-|---- ES.ConexaoSolidaria.Infra <br>
-|---- ES.ConexaoSolidaria.Notificacoes <br>
-|---- ES.ConexaoSolidaria.Worker <br>
-|---- ES.ConexaoSolidaria.Gateway <br>
-|---- ES.ConexaoSolidaria.Frontend <br>
-|---- ES.ConexaoSolidaria.DynamoPgProxy <br>
 
-<br>
 <br>
 Siga as instrucoes no ES.ConexaoSolidaria.Infra/docs/Como rodar
 
