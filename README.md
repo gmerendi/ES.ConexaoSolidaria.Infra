@@ -14,10 +14,9 @@ Responsável por:
 - [Repositorios do Projeto](#repositorios-do-projeto)
 - [Arquitetura](#arquitetura)
 - [Stack Tecnológica](#stack-tecnologica)
-- [Documentaçao](#documentaçao)
-- [Perfis e Regras de Acesso](#perfis-e-regras-de-acesso)
 - [Endpoints](#endpoints)
-- [Como Rodar Localmente](#como-rodar-localmente)
+- [Features](#features)
+- [Documentaçao](#documentaçao)
 
 ---
 
@@ -210,25 +209,107 @@ C:\FIAP\ <br>
 | **boto3** | 1.34.0 | Client DynamoDB |
 | **asyncio** | stdlib | Servidor TCP assíncrono |
 | **flake8** | — | Lint (CI) |
----
-
-## Documentação
-
-- [Casos de Uso](./docs/use-cases/)
-- [Diagramas](./docs/diagrams/)
-- [User Stories](./docs/user-stories/)
-- [ADR — Architecture Decision Records](./docs/adr/)
-- [Matriz de Rastreabilidade](./docs/traceability-matrix/)
-- [Glossário de Domínio](./docs/glossary/)
-- [LGPD Compliance](./docs/lgpd/)
-- [Contratos de API](./docs/api-contracts/)
-
-
-
-<br>
-Siga as instrucoes no ES.ConexaoSolidaria.Infra/docs/Como rodar
 
 ---
+
+## Endpoints
+
+Documentação de todos os endpoints dos microsserviços de **Usuários** e **Campanhas**, com funcionalidade, autenticação e perfis de acesso.
+
+---
+
+### Legenda
+
+| Símbolo | Significado |
+|---|---|
+| 🔓 | Endpoint público — não requer autenticação |
+| 🔐 | Endpoint protegido — requer token JWT |
+| 👤 | DOADOR |
+| 🏢 | GESTOR_ONG |
+
+---
+
+### Microsserviço de Usuários
+
+### Autenticação — `POST /api/v1/auth/...`
+
+| UC | Método | Endpoint | Funcionalidade | Auth | Acesso |
+|---|---|---|---|---|---|
+| UC-02 | `POST` | `/api/v1/auth/login` | Autentica o usuário com e-mail e senha. Gera token JWT e cacheia dados no Redis. Bloqueia usuários SUSPENDED e REMOVED | 🔓 | Todos |
+| UC-03 | `POST` | `/api/v1/auth/logout` | Invalida o token JWT adicionando-o à blacklist no Redis pelo tempo restante de vida. Remove dados do cache | 🔐 | 👤 🏢 |
+| UC-06 | `PUT` | `/api/v1/auth/reset-password` | Troca a senha do usuário logado. Exige a senha atual como confirmação de identidade. Invalida o token anterior e retorna um novo token JWT | 🔐 | 👤 🏢 |
+
+---
+
+#### Usuário — `POST /api/v1/usuario/...`
+
+| UC | Método | Endpoint | Funcionalidade | Auth | Acesso | Observação |
+|---|---|---|---|---|---|---|
+| UC-01 | `POST` | `/api/v1/usuario` | Cadastra um novo usuário. O perfil inicial é sempre **DOADOR** | 🔓 | Todos | E-mail e CPF únicos no sistema |
+| UC-04 | `GET` | `/api/v1/usuario?Email=` | Retorna os dados de um usuário pelo e-mail | 🔐 | 👤 🏢 | DOADOR consulta apenas o próprio perfil; GESTOR_ONG consulta qualquer perfil |
+| UC-05 | `DELETE` | `/api/v1/usuario?Email=` | Remove fisicamente o usuário do banco (LGPD). Doações permanecem para fins de auditoria fiscal | 🔐 | 👤 🏢 | Apenas o próprio usuário pode solicitar a exclusão |
+| UC-07 | `PUT` | `/api/v1/usuario/suspender?Email=` | Atualiza status para **SUSPENDED** — bloqueia o acesso do usuário | 🔐 | 🏢 | Exclusivo para gestores |
+| UC-08 | `PUT` | `/api/v1/usuario/ativar?Email=` | Atualiza status para **ACTIVE** — restaura o acesso do usuário | 🔐 | 🏢 | Exclusivo para gestores |
+| UC-09 | `PUT` | `/api/v1/usuario/alterar-para-gestor?Email=` | Eleva o perfil do usuário para **GESTOR_ONG** | 🔐 | 🏢 | Gestor não pode alterar o próprio perfil |
+| UC-10 | `PUT` | `/api/v1/usuario/alterar-para-doador?Email=` | Rebaixa o perfil do usuário para **DOADOR** | 🔐 | 🏢 | Gestor não pode alterar o próprio perfil |
+| UC-11 | `PUT` | `/api/v1/usuario/alterar?NomeCompleto=&Cpf=` | Atualiza nome completo e CPF do usuário logado | 🔐 | 👤 🏢 | Apenas o próprio usuário altera seus dados |
+
+---
+
+### Microsserviço de Campanhas
+
+#### Campanhas — `/api/v1/Campanhas/...`
+
+| UC | Método | Endpoint | Funcionalidade | Auth | Acesso | Observação |
+|---|---|---|---|---|---|---|
+| UC-12 | `POST` | `/api/v1/Campanhas` | Cria uma nova campanha de doações com status **ATIVA** | 🔐 | 🏢 | Título único no sistema |
+| UC-13 | `GET` | `/api/v1/Campanhas?Guid=` | Retorna os dados completos de uma campanha pelo GUID, independente do status | 🔐 | 👤 🏢 | |
+| UC-14 | `GET` | `/api/v1/Campanhas/todas?Pagina=&TamanhoPagina=` | **Painel de Transparência** — lista todas as campanhas com status ATIVA, com paginação. Padrão: página 1, tamanho 9999 | 🔓 | Todos | Usado na landing page pública |
+| UC-15 | `PUT` | `/api/v1/Campanhas/cancel?Guid=` | Cancela uma campanha ATIVA. Campanha CONCLUÍDA não pode ser cancelada | 🔐 | 🏢 | |
+| UC-16 | `PUT` | `/api/v1/Campanhas/concluir?Guid=` | Conclui uma campanha ATIVA | 🔐 | 🏢 | |
+| UC-17 | `PUT` | `/api/v1/Campanhas` | Altera título, descrição, meta financeira e datas de uma campanha. A campanha deve estar ATIVA | 🔐 | 🏢 | |
+| UC-18 | `GET` | `/api/v1/Campanhas/busca?Termo=` | **Busca avançada via Elasticsearch** — suporta fuzzy search (tolerância a erros de digitação) e busca por prefixo. Pesquisa em título, descrição, status e datas | 🔐 | 👤 🏢 | |
+
+---
+
+#### Doações — `/api/v1/Doacoes/...`
+
+| UC | Método | Endpoint | Funcionalidade | Auth | Acesso | Observação |
+|---|---|---|---|---|---|---|
+| UC-19 | `POST` | `/api/v1/Doacoes` | Registra uma **intenção de doação** e publica o evento `DonationCreatedEvent` no broker. O processamento efetivo ocorre no Worker de Doações | 🔐 | 👤 🏢 | A campanha deve estar ATIVA |
+| UC-20 | `GET` | `/api/v1/Doacoes/campanha?GuidCampanha=` | Lista todas as doações de uma campanha específica | 🔐 | 🏢 | Relatório administrativo |
+| UC-21 | `GET` | `/api/v1/Doacoes/usuario?Email=` | Lista todas as doações realizadas por um usuário específico | 🔐 | 🏢 | Relatório administrativo |
+| UC-22 | `GET` | `/api/v1/Doacoes/self` | Lista todas as doações do **usuário logado** — sem precisar informar e-mail | 🔐 | 👤 🏢 | Usa claims do JWT para identificar o usuário |
+
+---
+
+### Resumo por Perfil
+
+#### 🔓 Público (sem autenticação)
+- `POST /api/v1/auth/login` — login
+- `POST /api/v1/usuario` — cadastro de doador
+- `GET /api/v1/Campanhas/todas` — listar campanhas ativas
+
+#### 👤 DOADOR
+- Consultar e editar o próprio perfil
+- Alterar a própria senha
+- Excluir a própria conta (LGPD)
+- Ver as próprias doações
+- Registrar doação em campanha ativa
+- Consultar campanhas (por GUID e busca avançada)
+- Logout
+
+#### 🏢 GESTOR_ONG — tudo do DOADOR, mais:
+- Consultar qualquer usuário
+- Suspender e ativar usuários
+- Alterar perfil de usuários (DOADOR ↔ GESTOR_ONG)
+- Criar, alterar, cancelar e concluir campanhas
+- Relatórios de doações por campanha e por usuário
+
+---
+
+## Features
+
 O sistema possui os seguintes features implementados: <br>
 - [Sistema de Logging Estruturado](#sistema-de-logging-estruturado)
 - [Sistema de Cache - Redis](#sistema-de-cache)
@@ -244,7 +325,6 @@ O sistema possui os seguintes features implementados: <br>
 - [Proxy PostGreSql - Dynamo](#proxy-postgresql-dynamo)
 - [Frontend](#frontend)
 - [Observabilidade](#observabilidade)
-- [Atendimento a LGPD](#atendimento-a-LGPD)
 ---
 
 
@@ -2944,3 +3024,17 @@ Todos os ConfigMaps são montados como volumes no pod do Grafana — os dashboar
 - 🌐 **Observabilidade unificada** — Grafana centraliza três fontes distintas (Prometheus, Zabbix, DynamoDB) em uma única interface, sem precisar alternar entre ferramentas
 
 - 💰 **DynamoDB-PG Proxy** — elimina o custo do plugin pago do Grafana para DynamoDB, usando o datasource PostgreSQL nativo para consultar logs e auditoria
+
+---
+
+
+## Documentação
+
+- [Casos de Uso](./docs/use-cases/)
+- [Diagramas](./docs/diagrams/)
+- [User Stories](./docs/user-stories/)
+- [ADR — Architecture Decision Records](./docs/adr/)
+- [Matriz de Rastreabilidade](./docs/traceability-matrix/)
+- [Glossário de Domínio](./docs/glossary/)
+- [LGPD Compliance](./docs/lgpd/)
+- [Contratos de API](./docs/api-contracts/)
