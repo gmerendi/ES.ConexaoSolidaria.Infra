@@ -3035,5 +3035,5 @@ Todos os ConfigMaps são montados como volumes no pod do Grafana — os dashboar
 - [ADR — Architecture Decision Records](./docs/adr/)
 - [Matriz de Rastreabilidade](./docs/traceability-matrix/)
 - [Glossário de Domínio](./docs/glossary/)
-- [LGPD Compliance](./docs/lgpd/)
+- [LGPD Compliance](./docs/Lgpd/)
 - [Contratos de API](./docs/api-contracts/)
