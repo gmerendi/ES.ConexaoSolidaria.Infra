@@ -79,7 +79,7 @@ O sistema possui os seguintes features implementados: <br>
 - [Sistema de Mensageria](#sistema-de-mensageria)
 - [Sistema de Notificaçoes](#sistema-de-notificaçoes)
 - [Api Gateway](#api-gateway)
-- [Proxy PostGres - Dynamo](#proxy-postgres-dynamo)
+- [Proxy PostGreSql - Dynamo](#proxy-postgresql-dynamo)
 - [Observabilidade](#observabilidade)
 - [Observabilidade](#observabilidade)
 - [Atendimento a LGPD](#atendimento-a-LGPD)
@@ -1896,7 +1896,7 @@ TODO - Verificar telas de gateway swagger no AWS
 
 ---
 
-## Proxy Postgres - Dynamo
+## Proxy PostGreSql - Dynamo
 
 O Grafana suporta DynamoDB nativamente apenas via plugin pago. As tabelas de logs da plataforma (`cs-audit-log` e `cs-app-logs`) ficam no DynamoDB — inacessíveis pelo Grafana sem custo adicional.  Por esse motivo, criamos um proxy postgres - dynamo que **implementa o protocolo wire do PostgreSQL** e traduz queries SQL em operações de `Scan` no DynamoDB:
 
