@@ -77,6 +77,12 @@ O sistema possui os seguintes features implementados: <br>
 - [Sistema de Audit Log](#sistema-de-audit-log)
 - [Sistema de Autenticaçao](#sistema-de-autenticaçao)
 - [Sistema de Mensageria](#sistema-de-mensageria)
+- [Sistema de Notificaçao](#sistema-de-notificaçao)
+- [Api Gateway](#api-gateway)
+- [Proxy PostGres - Dynamo](#proxy-postgres-dynamo)
+- [Observabilidade](#observabilidade)
+- [Observabilidade](#observabilidade)
+- [Atendimento a LGPD](#atendimento-a-LGPD)
 ---
 
 
@@ -1116,7 +1122,7 @@ AES__KEY: "W36tuZgAwZTkvGebRMEQJjGtbLNJRK6unGj1Ow5Rnm8="  # base64 de 32 bytes
 
 ---
 
-## Sistema de Mensageria — Conexão Solidária
+## Sistema de Mensageria
 
 A plataforma utiliza sistema de mensageria assíncrona para desacoplar os microsserviços e garantir que operações críticas, baseado em **RabbitMQ** e **MassTransit** para o ambiente local, e **Amazon SQS** para os ambientes LAB e produção.
 
@@ -1356,6 +1362,341 @@ AWS    → IAmazonSQS.SendMessageAsync() → Amazon SQS (JSON raw)
 - 🔑 **CPF protegido** — dados sensíveis trafegam encriptados com AES-256 nos eventos, nunca em texto plano no broker
 
 - 🏗️ **Transação garantida** — INSERT de doação e UPDATE de campanha ocorrem na mesma transação PostgreSQL — ou os dois acontecem ou nenhum, sem estados inconsistentes
+
+
+---
+
+## Sistema de notificaçao
+
+---
+
+## API Gateway
+
+Documentação da camada de API Gateway adotada na plataforma Conexão Solidária. O sistema usa **dois gateways** conforme o ambiente:
+
+| Ambiente | Gateway | Tecnologia |
+|---|---|---|
+| `LOCAL` | Gateway próprio | YARP (Yet Another Reverse Proxy) — .NET |
+| `CLOUD` | Gateway gerenciado | AWS API Gateway v2 (HTTP API) |
+
+---
+
+### Gateway LOCAL — YARP
+
+**Repositório:** `ES.ConexaoSolidaria.Gateway`
+
+Implementado como uma aplicação .NET com **YARP** — biblioteca da Microsoft para reverse proxy de alta performance. É o único ponto de entrada para todos os microsserviços no ambiente local.
+
+#### Pipeline de middlewares
+
+```
+Request
+  └─ MetricsMiddleware       → expõe /metrics para Prometheus
+       └─ HealthChecks       → /health/live e /health/ready
+            └─ CORS          → valida origem (FrontendPolicy)
+                 └─ RateLimiter → sliding window por IP
+                      └─ Authentication → valida JWT
+                           └─ Authorization → verifica política (public/authenticated)
+                                └─ SwaggerProxy → proxy dos swagger.json dos microsserviços
+                                     └─ YARP ReverseProxy → roteia para o microsserviço correto
+                                          └─ LoadBalancing → distribui entre pods
+```
+
+---
+
+#### 1. Autenticação e Autorização
+
+**Arquivo:** `Extensions/AuthenticationExtension.cs`
+
+O gateway valida o token JWT como **primeira linha de defesa**. Os microsserviços **também validam o token individualmente** — padrão de segurança conhecido como **Defense in Depth (Defesa em Profundidade)**:
+
+```
+Request
+  └─ Gateway → valida JWT (1ª camada) ✅
+       └─ Microsserviço → valida JWT novamente (2ª camada) ✅
+```
+
+Isso garante que mesmo que uma requisição consiga bypassar o gateway e chegar diretamente ao microsserviço via rede interna do cluster, o token ainda será exigido e validado — sem confiança implícita entre serviços.
+
+```
+Validações ativas em ambas as camadas:
+  ✅ Chave de assinatura (HMAC SHA256)
+  ✅ Issuer
+  ✅ Audience
+  ✅ Lifetime (expiração)
+```
+
+O overhead é mínimo — verificar uma assinatura HMAC SHA256 é uma operação criptográfica leve, imperceptível em produção.
+
+Duas políticas de autorização controlam o acesso por rota no gateway:
+
+| Política | Comportamento | Exemplos de rota |
+|---|---|---|
+| `public` | Qualquer requisição passa | Login, cadastro, listar campanhas |
+| `authenticated` | Exige token JWT válido | Perfil, doações, gestão |
+
+---
+
+#### 2. Rate Limiting
+
+**Arquivo:** `Extensions/RateLimitExtension.cs`
+
+Dois limitadores de Sliding Window protegem a API contra abuso:
+
+| Política | Limite | Janela | Uso |
+|---|---|---|---|
+| `default` | Configurável | Configurável | Todas as rotas |
+| `login` | 10 requisições | 1 minuto | Rotas de autenticação — anti brute force |
+
+```
+Sliding Window com 6 segmentos:
+  → distribui o limite uniformemente dentro da janela
+  → mais justo que Fixed Window (evita burst no início do período)
+
+QueueLimit = 10:
+  → até 10 requisições ficam em fila aguardando slot disponível
+  → além disso, retorna 429 Too Many Requests imediatamente
+```
+
+Resposta quando limite excedido:
+```json
+{
+  "title": "Too Many Requests",
+  "status": 429,
+  "detail": "Limite de requisições excedido. Tente novamente em alguns instantes."
+}
+```
+
+Configurável via variáveis de ambiente sem redeploy:
+```yaml
+RateLimiting__PermitLimit:   "100"
+RateLimiting__WindowSeconds: "60"
+```
+
+---
+
+### 3. Roteamento — YARP
+
+**Arquivo:** `Extensions/ReverseProxyExtension.cs`
+
+O roteamento é declarativo via `appsettings.json` — cada rota define o cluster de destino e a política de autorização:
+
+```
+Rota pública (sem token):
+  campanhas-todas → GET /api/v1/Campanhas/todas → cs-campanhas-api
+
+Rotas autenticadas:
+  auth-publico    → /api/v1/auth/**         → cs-usuarios-api  (política: public)
+  usuarios-cadastro → POST /api/v1/usuario  → cs-usuarios-api  (política: public)
+  usuarios-autenticado → /api/v1/usuario/** → cs-usuarios-api  (política: authenticated)
+  campanhas       → /api/v1/Campanhas/**    → cs-campanhas-api (política: authenticated)
+  doacoes         → /api/v1/Doacoes/**      → cs-campanhas-api (política: authenticated)
+```
+
+Cada microsserviço é um `ClusterIP` do Kubernetes — acessível apenas internamente, nunca exposto diretamente:
+
+```
+Internet
+  └─ Gateway (único ponto de entrada público)
+       ├─ cs-usuarios-api:8080   (ClusterIP — interno)
+       └─ cs-campanhas-api:8080  (ClusterIP — interno)
+```
+
+Load balancing entre pods é feito automaticamente via `UseLoadBalancing()` — o YARP distribui requisições entre todas as réplicas disponíveis:
+
+```csharp
+app.MapReverseProxy(proxyPipeline =>
+{
+    proxyPipeline.UseRateLimiter();
+    proxyPipeline.UseLoadBalancing();  // ← distribui entre pods
+});
+```
+
+---
+
+#### 4. CORS
+
+**Arquivo:** `Extensions/CorsExtension.cs`
+
+Configurado para aceitar requisições apenas da URL do frontend — impede que outros domínios chamem a API diretamente:
+
+```csharp
+policy.WithOrigins(frontendUrl)  // ← apenas o frontend autorizado
+      .AllowAnyMethod()
+      .AllowAnyHeader();
+```
+
+```yaml
+FRONTEND_URL: "https://www.conexaosolidaria.com.br"
+```
+
+---
+
+#### 5. Swagger Proxy
+
+**Arquivo:** `Extensions/SwaggerExtension.cs`
+
+O Swagger UI do gateway agrega a documentação de todos os microsserviços em uma única interface. Como os microsserviços são internos (ClusterIP), o browser não consegue acessar seus `swagger.json` diretamente — o gateway faz o proxy:
+
+```
+Browser → GET /swagger-proxy/campanhas
+  └─ Gateway busca internamente: http://cs-campanhas-api:8080/swagger/v1/swagger.json
+  └─ Substitui o campo "servers" pelo host do gateway (URL dinâmica do request)
+  └─ Remove rotas /private/ do documento
+  └─ Retorna o JSON modificado ao browser
+```
+
+O token JWT é persistido no Swagger UI (`persistAuthorization: true`) — uma vez autenticado, o token é mantido entre as requisições sem precisar reinserir.
+
+---
+
+#### Health Checks
+
+Dois endpoints de health check seguindo o padrão Kubernetes:
+
+| Endpoint | Uso |
+|---|---|
+| `/health/live` | Liveness Probe — o pod está vivo? |
+| `/health/ready` | Readiness Probe — o pod está pronto para receber tráfego? |
+
+---
+
+### Gateway AWS — API Gateway v2 (HTTP API)
+
+**Arquivo:** `terraform/modules/apigateway/main.tf`
+
+Em produção, o gateway próprio (YARP) é substituído pelo **AWS API Gateway v2** gerenciado — reduzindo operação e aproveitando a infraestrutura da AWS.
+
+### Arquitetura
+
+```
+Internet
+  └─ AWS API Gateway v2 (HTTP API)
+       └─ VPC Link (conexão privada à VPC)
+            └─ Network Load Balancer (NLB)
+                 ├─ EKS Node — cs-usuarios-api (porta 5001)
+                 └─ EKS Node — cs-campanhas-api (porta 5002)
+```
+
+O **VPC Link** é o componente crítico — permite que o API Gateway se comunique com serviços dentro da VPC privada sem expô-los à internet. Os microsserviços continuam inacessíveis publicamente.
+
+---
+
+#### CORS no AWS API Gateway
+
+Configurado diretamente no recurso Terraform:
+
+```hcl
+cors_configuration {
+  allow_origins     = [var.frontend_url]
+  allow_methods     = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+  allow_headers     = ["Content-Type", "Authorization", "Accept"]
+  expose_headers    = ["*"]
+  allow_credentials = true
+  max_age           = 300  # 5 minutos de cache do preflight
+}
+```
+
+O `OPTIONS` (preflight) não tem rota explícita — é interceptado automaticamente pelo `cors_configuration`, respondendo sem chegar ao microsserviço.
+
+---
+
+#### Roteamento no AWS API Gateway
+
+Cada rota define método HTTP + path e aponta para uma integração (microsserviço):
+
+```
+Usuários API (porta 5001):
+  POST   /api/v1/auth/{proxy+}       → usuarios-integration
+  GET    /api/v1/usuario             → usuarios-integration
+  POST   /api/v1/usuario             → usuarios-integration
+  GET    /api/v1/usuario/{proxy+}    → usuarios-integration
+  PUT    /api/v1/usuario/{proxy+}    → usuarios-integration
+  DELETE /api/v1/usuario/{proxy+}    → usuarios-integration
+
+Campanhas API (porta 5002):
+  GET    /api/v1/Campanhas           → campanhas-integration
+  POST   /api/v1/Campanhas           → campanhas-integration
+  GET    /api/v1/Campanhas/{proxy+}  → campanhas-integration
+  ...
+  GET    /api/v1/Doacoes/{proxy+}    → campanhas-integration  ← Doações são do ms de Campanhas
+  POST   /api/v1/Doacoes/{proxy+}    → campanhas-integration
+```
+
+---
+
+#### URLs para acesso
+TODO
+
+---
+
+#### Rate Limiting no AWS API Gateway
+
+Configurado no Stage via Terraform:
+
+```hcl
+default_route_settings {
+  throttling_rate_limit  = var.rate_limit_rate   # requisições por segundo sustentadas
+  throttling_burst_limit = var.rate_limit_burst  # burst máximo
+}
+```
+
+O AWS API Gateway retorna `429 Too Many Requests` automaticamente quando os limites são excedidos — sem código adicional.
+
+---
+
+#### Logs — CloudWatch
+
+Cada requisição é registrada no CloudWatch com informações estruturadas:
+
+```json
+{
+  "requestId": "abc-123",
+  "ip": "203.0.113.1",
+  "requestTime": "25/Jun/2026:14:00:00",
+  "httpMethod": "POST",
+  "routeKey": "POST /api/v1/auth/login",
+  "status": "200",
+  "responseLength": "512",
+  "integrationError": null
+}
+```
+
+Retenção: **7 dias** — configurável via Terraform.
+
+---
+
+### Comparação entre os dois gateways
+
+| Funcionalidade | YARP (LOCAL) | AWS API Gateway v2 |
+|---|---|---|
+| **Autenticação JWT** | ✅ Gateway + cada microsserviço (Defense in Depth) | ✅ Gateway + cada microsserviço (Defense in Depth) |
+| **Rate Limiting** | ✅ Sliding Window configurável | ✅ Rate/Burst por stage |
+| **CORS** | ✅ Por origem | ✅ Por origem com preflight automático |
+| **Roteamento** | ✅ appsettings.json | ✅ Terraform declarativo |
+| **Load Balancing** | ✅ Entre pods via YARP | ✅ Via NLB |
+| **Swagger UI** | ✅ Agregado com proxy | ❌ Não disponível em produção |
+| **Operação** | Manual (pod no EKS) | Gerenciado pela AWS |
+
+<BR>
+TODO - Verificar telas de gateway swagger no AWS
+
+
+---
+
+## Benefícios
+
+- 🔒 **Único ponto de entrada** — nenhum microsserviço é acessível diretamente da internet, independente do ambiente
+
+- 🛡️ **Autenticação centralizada** — JWT validado no gateway antes de chegar a qualquer microsserviço, sem duplicar lógica de autenticação
+
+- ⚡ **Rate limiting anti-abuso** — proteção contra brute force no login e DDoS em todas as rotas, com resposta padronizada 429
+
+- 🌍 **CORS gerenciado** — frontend autorizado explicitamente, sem configuração duplicada em cada microsserviço
+
+- 🔄 **Portabilidade** — mesma interface de API para o frontend em qualquer ambiente, o gateway abstrai onde os microsserviços estão rodando
+
+- 🏗️ **Infrastructure as Code** — o AWS API Gateway é 100% provisionado via Terraform, garantindo reproducibilidade e histórico de mudanças
 
 
 ---
