@@ -187,3 +187,151 @@ sequenceDiagram
     L->>MT: POST /api/send (e-mail confirmação doação)
     Note over MT: E-mail enviado
 ```
+---
+
+## Login
+### Local
+```mermaid
+sequenceDiagram
+    actor U as Usuário
+    participant GW as Gateway (YARP)
+    participant MS as Microsserviço Usuários
+    participant PG as PostgreSQL
+    participant RD as Redis
+
+    U->>GW: POST /api/v1/auth/login
+    GW->>GW: Rota pública (sem validação JWT)
+    GW->>MS: Repassa requisição
+    MS->>MS: Valida formato do e-mail
+    MS->>PG: Busca usuário por e-mail
+    MS->>MS: Verifica status (bloqueia SUSPENDED e REMOVED)
+    MS->>MS: BCrypt.Verify(senha, hash)
+    MS->>MS: Gera token JWT (HMAC SHA256)
+    MS->>MS: Encripta CPF no claim (AES-256)
+    MS->>RD: SET usuario:{email} TTL 30min
+    MS-->>GW: 200 OK {token, dataExpiracao, guid, email, status}
+    GW-->>U: 200 OK {token, dataExpiracao, guid, email, status}
+```
+
+### AWS
+```mermaid
+sequenceDiagram
+    actor U as Usuário
+    participant APIGW as AWS API Gateway
+    participant MS as Microsserviço Usuários (EKS)
+    participant PG as RDS PostgreSQL
+    participant RD as ElastiCache Redis
+
+    U->>APIGW: POST /api/v1/auth/login
+    APIGW->>APIGW: Rota pública + throttling (10 req/min anti brute force)
+    APIGW->>MS: Repassa via VPC Link
+    MS->>MS: Valida formato do e-mail
+    MS->>PG: Busca usuário por e-mail
+    MS->>MS: Verifica status (bloqueia SUSPENDED e REMOVED)
+    MS->>MS: BCrypt.Verify(senha, hash)
+    MS->>MS: Gera token JWT (HMAC SHA256)
+    MS->>MS: Encripta CPF no claim (AES-256)
+    MS->>RD: SET usuario:{email} TTL 30min
+    MS-->>APIGW: 200 OK {token, dataExpiracao, guid, email, status}
+    APIGW-->>U: 200 OK {token, dataExpiracao, guid, email, status}
+```
+
+---
+
+## Logout
+### Local
+```mermaid
+sequenceDiagram
+    actor U as Usuário
+    participant GW as Gateway (YARP)
+    participant MS as Microsserviço Usuários
+    participant RD as Redis
+
+    U->>GW: POST /api/v1/auth/logout (Bearer token)
+    GW->>GW: Valida JWT (assinatura, expiração)
+    GW->>GW: Verifica blacklist no Redis
+    GW->>MS: Repassa requisição
+    MS->>MS: Calcula tempo restante do token (GetTokenTimeToExpire)
+    MS->>RD: SET blacklist:{token} TTL = tempo restante
+    MS->>RD: DEL usuario:{email}
+    MS-->>GW: 200 OK {true}
+    GW-->>U: 200 OK {true}
+
+    Note over U,RD: Token imediatamente inválido em qualquer requisição subsequente
+```
+
+## AWS
+```mermaid
+sequenceDiagram
+    actor U as Usuário
+    participant APIGW as AWS API Gateway
+    participant MS as Microsserviço Usuários (EKS)
+    participant RD as ElastiCache Redis
+
+    U->>APIGW: POST /api/v1/auth/logout (Bearer token)
+    APIGW->>APIGW: Valida JWT (assinatura, expiração, issuer, audience)
+    APIGW->>APIGW: Rate limiting (throttling por stage)
+    APIGW->>MS: Repassa via VPC Link
+    MS->>MS: Valida JWT (Defense in Depth)
+    MS->>MS: Calcula tempo restante do token (GetTokenTimeToExpire)
+    MS->>RD: SET blacklist:{token} TTL = tempo restante
+    MS->>RD: DEL usuario:{email}
+    MS-->>APIGW: 200 OK {true}
+    APIGW-->>U: 200 OK {true}
+
+    Note over U,RD: Token imediatamente inválido em qualquer requisição subsequente
+```
+---
+## Buscar Campanhas Ativas
+
+### Local
+```mermaid
+sequenceDiagram
+    actor U as Usuário
+    participant GW as Gateway (YARP)
+    participant MS as Microsserviço Campanhas
+    participant RD as Redis
+    participant PG as PostgreSQL
+
+    U->>GW: GET /api/v1/Campanhas/todas?Pagina=1&TamanhoPagina=9
+    GW->>GW: Rota pública (sem validação JWT)
+    GW->>MS: Repassa requisição
+    MS->>RD: GET campanhas:ativas:{pagina}:{tamanho}
+
+    alt Cache hit
+        RD-->>MS: Retorna lista cacheada
+    else Cache miss
+        MS->>PG: SELECT campanhas WHERE status = ATIVA
+        PG-->>MS: Lista de campanhas
+        MS->>RD: SET campanhas:ativas:{pagina}:{tamanho} TTL 60s
+    end
+
+    MS-->>GW: 200 OK {campanhas, totalRegistros, pagina}
+    GW-->>U: 200 OK {campanhas, totalRegistros, pagina}
+```
+### AWS
+```mermaid
+sequenceDiagram
+    actor U as Usuário
+    participant APIGW as AWS API Gateway
+    participant MS as Microsserviço Campanhas (EKS)
+    participant RD as ElastiCache Redis
+    participant PG as RDS PostgreSQL
+
+    U->>APIGW: GET /api/v1/Campanhas/todas?Pagina=1&TamanhoPagina=9
+    APIGW->>APIGW: Rota pública + throttling por stage
+    APIGW->>MS: Repassa via VPC Link
+    MS->>RD: GET campanhas:ativas:{pagina}:{tamanho}
+
+    alt Cache hit
+        RD-->>MS: Retorna lista cacheada
+    else Cache miss
+        MS->>PG: SELECT campanhas WHERE status = ATIVA
+        PG-->>MS: Lista de campanhas
+        MS->>RD: SET campanhas:ativas:{pagina}:{tamanho} TTL 60s
+    end
+
+    MS-->>APIGW: 200 OK {campanhas, totalRegistros, pagina}
+    APIGW-->>U: 200 OK {campanhas, totalRegistros, pagina}
+```
+---
