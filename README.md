@@ -19,6 +19,7 @@ Responsável por:
 - [Testes Unitarios](#testes-unitarios)
 - [CI/CD - Github Actions](#github-actions)
 - [Documentaçao](#documentaçao)
+- [Como rodar](./docs/ComoRodar.md)
 
 ---
 
