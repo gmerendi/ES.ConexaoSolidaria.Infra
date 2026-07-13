@@ -5,6 +5,19 @@ Existem 3 maneiras de rodar o projeto: <br>
 - Kubernetes local: Cria os deployments kubernetes localmente, utilizando a instalação kubernetes monitorada no docker desktop.
 - AWS Cloud: Cria os deployments kubernetes no cloud AWS, utilizando serviços no cloud como alternativa para os serviços locais.  Requer criação prévia da Infra no AWS.
 
+Inicialmente, todos os projetos precisam ser clonados, respeitando a hierarquia de pastas abaixo: <br>
+C:\FIAP\ <br>
+|---- ES.ConexaoSolidaria.Usuarios <br>
+|---- ES.ConexaoSolidaria.Campanhas <br>
+|---- ES.ConexaoSolidaria.Infra <br>
+|---- ES.ConexaoSolidaria.Notificacoes <br>
+|---- ES.ConexaoSolidaria.Worker <br>
+|---- ES.ConexaoSolidaria.Gateway <br>
+|---- ES.ConexaoSolidaria.Frontend <br>
+|---- ES.ConexaoSolidaria.DynamoPgProxy <br>
+
+<br>
+
 ---
 
 ## Sumário
