@@ -74,6 +74,7 @@ O sistema possui os seguintes features implementados: <br>
 - [Sistema de Cache - Redis](#sistema-de-cache)
 - [Sistema de Busca Avançada - Elasticsearch](#sistema-de-busca-avancada-elasticsearch)
 - [Sistema de Gerenciamento de Erros](#sistema-de-gerenciamento-de-erros)
+- [Sistema de Audit Log](#sistema-de-audit-log)
 ---
 
 
@@ -584,30 +585,6 @@ public static TituloCampanha Create(string valor)
 
 ---
 
-### Benefícios
-
-- 🎯 **Respostas padronizadas** — todos os erros seguem o mesmo contrato de resposta, facilitando o tratamento no frontend e nos microsserviços consumidores
-
-- 🔍 **Rastreabilidade total** — o `x-correlation-id` percorre toda a cadeia de processamento, permitindo localizar qualquer requisição nos logs do DynamoDB com um único ID
-
-- 🛡️ **Segurança por padrão** — erros inesperados nunca expõem stack traces, mensagens técnicas ou detalhes de infraestrutura ao cliente
-
-- 📋 **Catálogo centralizado de erros** — todas as mensagens ficam no `Errors.resx`, eliminando strings duplicadas no código e facilitando manutenção e futura internacionalização
-
-- ⚡ **Log assíncrono** — a persistência no DynamoDB não bloqueia a resposta ao cliente, mantendo a latência da API independente da disponibilidade do serviço de log
-
-- 🏗️ **Validação no domínio** — o `AssertionConcern` garante que entidades e value objects nunca existam em estado inválido, prevenindo dados corrompidos antes de chegarem ao banco
-
-- 🔀 **Status HTTP semântico automático** — o prefixo do `ErrorCode` (`400_`, `422_`, `403_`) determina o status HTTP sem necessidade de mapeamentos manuais adicionais
-
-- 📊 **Observabilidade integrada** — cada erro é registrado no DynamoDB com nível de severidade, tipo (LOG/EVENT), caller, stack trace e correlation ID, formando uma trilha de auditoria completa
-
-- 🔄 **Result Pattern** — handlers retornam `Result<T>` em vez de lançar exceções como fluxo de controle, tornando o código mais previsível e testável
-
-- 🌐 **Pronto para internacionalização** — a separação entre código de erro e mensagem no `.resx` permite adicionar suporte a múltiplos idiomas sem alterar nenhuma linha de lógica de negócio
-
----
-
 ### Result Pattern
 
 **Arquivo:** `Domain/Shared/Primitives/Result.cs`
@@ -693,6 +670,226 @@ x-correlation-id: abc-123
 }
 ```
 
+---
+
+### Benefícios
+
+- 🎯 **Respostas padronizadas** — todos os erros seguem o mesmo contrato de resposta, facilitando o tratamento no frontend e nos microsserviços consumidores
+
+- 🔍 **Rastreabilidade total** — o `x-correlation-id` percorre toda a cadeia de processamento, permitindo localizar qualquer requisição nos logs do DynamoDB com um único ID
+
+- 🛡️ **Segurança por padrão** — erros inesperados nunca expõem stack traces, mensagens técnicas ou detalhes de infraestrutura ao cliente
+
+- 📋 **Catálogo centralizado de erros** — todas as mensagens ficam no `Errors.resx`, eliminando strings duplicadas no código e facilitando manutenção e futura internacionalização
+
+- ⚡ **Log assíncrono** — a persistência no DynamoDB não bloqueia a resposta ao cliente, mantendo a latência da API independente da disponibilidade do serviço de log
+
+- 🏗️ **Validação no domínio** — o `AssertionConcern` garante que entidades e value objects nunca existam em estado inválido, prevenindo dados corrompidos antes de chegarem ao banco
+
+- 🔀 **Status HTTP semântico automático** — o prefixo do `ErrorCode` (`400_`, `422_`, `403_`) determina o status HTTP sem necessidade de mapeamentos manuais adicionais
+
+- 📊 **Observabilidade integrada** — cada erro é registrado no DynamoDB com nível de severidade, tipo (LOG/EVENT), caller, stack trace e correlation ID, formando uma trilha de auditoria completa
+
+- 🔄 **Result Pattern** — handlers retornam `Result<T>` em vez de lançar exceções como fluxo de controle, tornando o código mais previsível e testável
+
+- 🌐 **Pronto para internacionalização** — a separação entre código de erro e mensagem no `.resx` permite adicionar suporte a múltiplos idiomas sem alterar nenhuma linha de lógica de negócio
+
+
+---
+## Sistema de Audit Log
+
+O Audit Log registra automaticamente **quem alterou o quê e quando** no banco de dados PostgreSQL. É gerado pelo `AuditInterceptor`, um interceptor do EF Core que captura todas as operações de escrita sem nenhuma chamada manual nos repositórios ou handlers.
+
+```
+SaveChangesAsync()
+  │
+  ├─ ANTES do SQL → captura estado das entidades (old/new)
+  ├─ EF Core executa SQL no PostgreSQL ✅
+  └─ APÓS sucesso → persiste trilha no DynamoDB (cs-audit-log)
+```
+
+---
+
+### Tabela — `cs-audit-log`
+
+Armazenada no **AWS DynamoDB**, escolhido por sua escalabilidade, custo por uso e suporte nativo a TTL.
+
+#### Estrutura
+
+| Atributo | Tipo | Descrição |
+|---|---|---|
+| `PK` | String (PK) | `ENTITY#{TABELA}#{GUID}` — ex: `ENTITY#USUARIO#abc-123` |
+| `SK` | String (SK) | `TS#{ISO8601}` — ex: `TS#2026-06-25T14:00:00Z` |
+| `ResourceId` | String (GSI PK) | GUID da entidade — permite buscar todo o histórico de uma entidade |
+| `ServiceName` | String | Microsserviço que realizou a operação — ex: `CS-USUARIOS-API` |
+| `Operation` | String | `ADDED`, `MODIFIED`, `DELETED` |
+| `ChangedBy` | String | E-mail do usuário autenticado ou `Worker` para operações automáticas |
+| `IpAddress` | String | IP do cliente ou `Internal` para workers e processos internos |
+| `Payload` | String | JSON com os dados da operação |
+| `TTL` | Number | Unix timestamp — expiração em 1 ano |
+
+#### Índice GSI — `ResourceIdIndex`
+
+Permite buscar todo o histórico de alterações de uma entidade específica pelo seu GUID, independente do serviço que realizou a operação:
+
+```
+ResourceIdIndex
+  PK: ResourceId  ← GUID da entidade
+  SK: SK          ← ordenação cronológica
+```
+
+---
+
+### AuditInterceptor — Como Funciona
+
+**Arquivo:** `Infrastructure/Services/ChangesInterceptor/ChangesInterceptor.cs`
+
+Implementa o `SaveChangesInterceptor` do EF Core em **duas fases**:
+
+#### Fase 1 — Captura (antes do SQL)
+
+```
+SavingChangesAsync()
+  └─ CaptureChanges()
+       └─ Percorre o ChangeTracker do EF Core
+       └─ Filtra apenas entidades que herdam de EntityBase
+       └─ Filtra apenas estados: Added, Modified, Deleted
+       └─ Para MODIFIED: gera diff apenas dos campos que mudaram (old → new)
+       └─ Para ADDED / DELETED: captura snapshot completo de todos os campos
+       └─ Armazena em AsyncLocal<List<AuditLog>> (thread-safe por requisição)
+```
+
+#### Fase 2 — Persistência (após sucesso no SQL)
+
+```
+SavedChangesAsync()
+  └─ PersistAuditAsync()
+       └─ Lê as entradas capturadas na Fase 1
+       └─ Resolve o usuário autenticado via IUserContext
+       └─ Resolve o IP do cliente via IHttpContextAccessor
+       └─ Persiste cada entrada no DynamoDB (cs-audit-log)
+```
+
+> **Importante:** a auditoria só é gerada **após** o commit bem-sucedido no PostgreSQL. Se a transação falhar, nenhum registro de auditoria é criado — garantindo consistência entre os dois sistemas.
+
+---
+
+### Formato do Payload
+
+**Operação `ADDED`** — snapshot completo do estado inicial:
+```json
+{
+  "Guid": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "NomeCompleto": "João Silva",
+  "Email": "joao@email.com",
+  "Perfil": "DOADOR",
+  "Status": "ACTIVE",
+  "CriadoPor": "joao@email.com",
+  "DataCriacao": "2026-06-25T14:00:00Z"
+}
+```
+
+**Operação `MODIFIED`** — apenas os campos que foram alterados, com valor anterior e novo:
+```json
+{
+  "Status": { "old": "ACTIVE", "new": "SUSPENDED" },
+  "ModificadoPor": { "old": null, "new": "admin@ong.com" },
+  "DataModificacao": { "old": null, "new": "2026-06-25T15:00:00Z" }
+}
+```
+
+**Operação `DELETED`** — snapshot completo do estado antes da deleção:
+```json
+{
+  "Guid": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "NomeCompleto": "João Silva",
+  "Email": "joao@email.com",
+  "Status": "ACTIVE"
+}
+```
+
+---
+
+### Entidades Auditadas
+
+Apenas entidades que herdam de `EntityBase` são interceptadas — garantindo que tabelas auxiliares, de configuração ou de infraestrutura não gerem registros desnecessários.
+
+```csharp
+var entries = context.ChangeTracker.Entries()
+    .Where(e => e.Entity is EntityBase &&
+                (e.State == EntityState.Added ||
+                 e.State == EntityState.Modified ||
+                 e.State == EntityState.Deleted));
+```
+
+---
+
+### Exemplo de Registro
+
+Suspensão de um usuário pelo gestor:
+
+```
+PK:          ENTITY#USUARIO#3fa85f64-5717-4562-b3fc-2c963f66afa6
+SK:          TS#2026-06-25T15:00:00.000Z
+ResourceId:  3fa85f64-5717-4562-b3fc-2c963f66afa6
+ServiceName: CS-USUARIOS-API
+Operation:   MODIFIED
+ChangedBy:   admin@conexao-solidaria.com.br
+IpAddress:   192.168.1.100
+TTL:         1782000000  (expira em 1 ano)
+Payload:     {
+               "Status": { "old": "ACTIVE", "new": "SUSPENDED" },
+               "ModificadoPor": { "old": null, "new": "admin@conexao-solidaria.com.br" }
+             }
+```
+
+---
+
+### Configuração por Ambiente
+
+```
+LOCAL (docker-compose)
+  └─ DynamoDB Local (container amazon/dynamodb-local)
+  └─ Credenciais fictícias ("local" / "local")
+
+LAB (AWS com credenciais temporárias)
+  └─ DynamoDB real na AWS
+  └─ Credenciais via AWS_ACCESS_KEY_ID / AWS_SESSION_TOKEN
+
+PRODUÇÃO (AWS com IAM Role)
+  └─ DynamoDB real na AWS
+  └─ Credenciais via IAM Role do pod (sem chaves hardcoded)
+```
+
+---
+
+### Migration Automática
+
+As tabelas DynamoDB são criadas automaticamente no startup da aplicação:
+
+```csharp
+await DynamoDbConfiguration.DynamoDbMigration(app.Services);
+```
+
+Se as tabelas já existirem, a migration é ignorada silenciosamente. O TTL é habilitado desde a criação.
+
+---
+
+### Benefícios
+
+- 📜 **Trilha de auditoria completa** — cada criação, alteração e deleção no banco de dados é registrada automaticamente, sem nenhuma linha de código adicional nos repositórios ou handlers
+
+- 🔍 **Histórico por entidade** — o `ResourceIdIndex` permite consultar todas as alterações de qualquer entidade pelo seu GUID em ordem cronológica
+
+- 🕒 **Diff preciso** — operações `MODIFIED` registram apenas os campos que realmente mudaram, com valor anterior e novo, eliminando ruído
+
+- 🛡️ **Conformidade com LGPD** — registra quem acessou e alterou dados pessoais, com e-mail do responsável e IP de origem, atendendo requisitos de rastreabilidade
+
+- ✅ **Consistência garantida** — a auditoria só é gerada após o commit bem-sucedido no PostgreSQL, nunca para transações que falharam
+
+- 💰 **Custo otimizado** — TTL de 1 ano remove registros antigos automaticamente, evitando acúmulo indefinido e custo desnecessário no DynamoDB
+
+- 🏗️ **Transparente e automático** — o `AuditInterceptor` opera como um interceptor do EF Core, invisível para o código de negócio
 
 ---
 
