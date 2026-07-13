@@ -1657,6 +1657,128 @@ A plataforma possui testes unitários em dois microsserviços — **Usuários** 
 
 ---
 
+## GitHub Actions
+
+Os repositórios possuem dois workflows independentes que formam o pipeline completo:
+
+```
+Push/PR → develop ou main
+  └─ ci.yml  (CI — Integração Contínua)
+       └─ Build + Testes + Cobertura
+
+Push → develop
+  └─ cd.yml  (CD — Entrega Contínua)
+       └─ CI como gate obrigatório
+            └─ Build Docker → ECR → Deploy EKS
+```
+
+O CD **não executa** se o CI falhar — o `ci-gate` é um job de pré-requisito explícito em todos os workflows de entrega.
+
+---
+
+### Workflows por Repositório
+
+| Repositório | CI | CD | Observação |
+|---|---|---|---|
+| `Usuarios` | ✅ Build + Testes | ✅ ECR + EKS | Deploy: `cs-usuarios-api` |
+| `Campanhas` | ✅ Build + Testes | ✅ ECR + EKS | Deploy: `cs-campanhas-api` |
+| `Worker` | ✅ Build + Testes | ✅ ECR + EKS | Deploy: `cs-donationworker` |
+| `DynamoPgProxy` | ✅ Lint + Sintaxe | ✅ ECR + EKS | Deploy: `cs-dynamo-pg-proxy` |
+| `Frontend` | ✅ Build + Publish | ✅ ECR + EKS | Deploy: `cs-frontend` |
+| `ApiGateway` | ✅ Build + Publish | Não publicado para o Cloud |  |
+| `Notificacoes` | ✅ Build + Publish | Não publicado para o Cloud |  |
+
+---
+
+## CI — Integração Contínua
+
+**Gatilhos:** `push` e `pull_request` para `develop` e `main`, além de `workflow_call` (chamado pelo CD como gate).
+
+### Projetos .NET (Usuários, Campanhas, Worker, Frontend)
+
+```
+1. Checkout do código
+2. Setup .NET 9.0.x
+3. Cache NuGet → chave baseada no hash dos .csproj (evita downloads repetidos)
+4. dotnet restore
+5. dotnet build --configuration Release
+6. dotnet test --collect:"XPlat Code Coverage"
+7. Upload de artefatos:
+     ├─ test-results.trx  → resultados dos testes
+     └─ coverage.cobertura.xml → cobertura de código
+```
+
+Os artefatos de cobertura e resultados de testes ficam disponíveis na aba **Actions** do GitHub após cada execução.
+
+### DynamoDB PG Proxy (Python)
+
+Pipeline diferenciado por ser Python:
+
+```
+1. Checkout do código
+2. Setup Python 3.12
+3. pip install -r requirements.txt + flake8
+4. flake8 → lint apenas erros críticos (E9, F63, F7, F82)
+5. python -m py_compile → valida sintaxe do arquivo principal
+```
+
+---
+
+## CD — Entrega Contínua
+
+**Gatilhos:** `push` para `develop` e `workflow_dispatch` (execução manual).
+
+### Pipeline
+
+```
+1. ci-gate (job)
+     └─ reutiliza ci.yml via workflow_call
+     └─ bloqueia o CD se CI falhar
+
+2. build-push-deploy (job) — executa apenas se ci-gate passar
+     ├─ Checkout do repositório da aplicação
+     ├─ Checkout do repositório de Infra (manifests K8s)
+     │    └─ repositório separado: ES.ConexaoSolidaria.Infra
+     │    └─ autenticado via INFRA_REPO_TOKEN (secret)
+     ├─ Configurar credenciais AWS (access key + session token)
+     ├─ Login no Amazon ECR
+     ├─ docker build + docker push
+     │    └─ tag: {github.sha}-{github.run_number}
+     ├─ aws eks update-kubeconfig
+     ├─ kubectl apply -f infra/k8s/aws/services/{manifesto}.yaml
+     ├─ kubectl set image deployment/{nome} {nome}={imagem}
+     └─ kubectl rollout status --timeout=120s
+```
+
+### Tag da imagem Docker
+
+```
+{commit_sha}-{run_number}
+ex: a1b2c3d4e5f6-42
+```
+
+Combina o SHA do commit com o número do run — rastreável e único por build.
+
+---
+
+## Benefícios
+
+- 🚦 **CI como gate obrigatório** — o CD nunca executa se o build ou os testes falharem, impedindo que código quebrado chegue ao EKS
+
+- 🏷️ **Rastreabilidade por commit** — a tag `{sha}-{run_number}` permite identificar exatamente qual commit está rodando em cada pod do Kubernetes
+
+- ⚡ **Cache NuGet** — pacotes são cacheados por hash dos `.csproj`, acelerando builds subsequentes sem downloads desnecessários
+
+- 🔁 **workflow_call** — o CI é reutilizado pelo CD via `workflow_call`, evitando duplicação de etapas e garantindo que o mesmo pipeline de validação seja executado em ambos os contextos
+
+- 🔒 **Secrets centralizados** — credenciais AWS e tokens de repositório nunca ficam no código — apenas nos secrets do GitHub Actions
+
+- 🖐️ **workflow_dispatch** — permite disparar um deploy manualmente pelo GitHub sem precisar fazer um push, útil para rollbacks e deploys de urgência
+
+- 📊 **Artefatos de cobertura** — resultados de testes e cobertura de código publicados como artefatos a cada CI, disponíveis para análise diretamente na aba Actions
+
+---
+
 ## API Gateway
 
 Documentação da camada de API Gateway adotada na plataforma Conexão Solidária. O sistema usa **dois gateways** conforme o ambiente:
