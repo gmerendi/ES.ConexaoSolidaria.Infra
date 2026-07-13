@@ -75,6 +75,7 @@ O sistema possui os seguintes features implementados: <br>
 - [Sistema de Busca Avançada - Elasticsearch](#sistema-de-busca-avancada-elasticsearch)
 - [Sistema de Gerenciamento de Erros](#sistema-de-gerenciamento-de-erros)
 - [Sistema de Audit Log](#sistema-de-audit-log)
+- [Sistema de Autenticaçao](#sistema-de-autenticaçao)
 ---
 
 
@@ -892,6 +893,227 @@ Se as tabelas já existirem, a migration é ignorada silenciosamente. O TTL é h
 - 🏗️ **Transparente e automático** — o `AuditInterceptor` opera como um interceptor do EF Core, invisível para o código de negócio
 
 ---
+
+## Sistema de Autenticaçao
+
+A autenticação é baseada em **JWT (JSON Web Token)** com três camadas de segurança complementares:
+
+```
+Request
+  └─ TokenBlacklistMiddleware   → bloqueia tokens revogados (Redis)
+       └─ JwtBearer Middleware  → valida assinatura, issuer, audience e expiração
+            └─ [Authorize]      → verifica perfil (Role) por endpoint
+```
+
+---
+
+### Fluxo de Autenticação
+
+```
+1. POST /api/v1/auth/login
+     └─ Verifica se usuário existe e está ACTIVE
+     └─ Verifica senha com BCrypt
+     └─ Gera token JWT assinado com HMAC SHA256
+     └─ Cacheia dados do usuário no Redis (30 min)
+     └─ Retorna token + data de expiração
+
+2. Requisições autenticadas
+     └─ TokenBlacklistMiddleware → token está na blacklist? → 401
+     └─ JwtBearer → valida assinatura, issuer, audience, expiração
+     └─ [Authorize(Roles = "...")] → verifica perfil
+
+3. POST /api/v1/auth/logout
+     └─ Adiciona token à blacklist no Redis pelo tempo restante de vida
+     └─ Remove dados do usuário do cache Redis
+
+4. PUT /api/v1/auth/reset-password
+     └─ Verifica senha atual
+     └─ Atualiza hash da senha no banco
+     └─ Invalida token atual (blacklist)
+     └─ Retorna novo token JWT
+```
+
+---
+
+### Token JWT
+
+**Arquivo:** `Infrastructure/Services/Authentication/TokenService.cs`
+
+#### Claims
+
+| Claim | Conteúdo | Exemplo |
+|---|---|---|
+| `ClaimTypes.NameIdentifier` | GUID do usuário | `3fa85f64-...` |
+| `ClaimTypes.Name` | Nome completo | `João Silva` |
+| `ClaimTypes.Email` | E-mail | `joao@email.com` |
+| `ClaimTypes.Role` | Perfil | `DOADOR`, `GESTOR_ONG` |
+| `ClaimTypes.SerialNumber` | CPF encriptado (AES-256) | `base64...` |
+
+#### Configuração
+
+```
+Algoritmo de assinatura: HMAC SHA256
+Validações ativas:
+  ✅ Chave de assinatura (IssuerSigningKey)
+  ✅ Issuer (quem emitiu)
+  ✅ Audience (para quem foi emitido)
+  ✅ Lifetime (expiração)
+  ✅ ClockSkew = Zero (sem tolerância de 5 min do .NET)
+```
+
+#### Variáveis de configuração
+
+```yaml
+Jwt__SecretKey:       "chave-secreta-com-mais-de-32-caracteres"
+Jwt__Issuer:          "ES-ConexaoSolidariaIssuer"
+Jwt__Audience:        "ES-ConexaoSolidariaClient"
+Jwt__ExpirationHours: "3"
+```
+
+---
+
+### Perfis de Acesso (Roles)
+
+| Perfil | Descrição | Acesso |
+|---|---|---|
+| `DOADOR` | Usuário doador | Endpoints próprios — ver e editar seu perfil, fazer doações |
+| `GESTOR_ONG` | Gestor da ONG | Endpoints administrativos — gerenciar usuários e campanhas |
+| `SISTEMA` | Workers e serviços internos | Endpoints internos de comunicação entre microsserviços |
+
+---
+
+### Token Blacklist — Logout Seguro
+
+**Arquivo:** `Middlewares/TokenBlackListMiddleware.cs`
+
+O logout em JWT é desafiador porque o token continua válido até expirar naturalmente. A solução é uma **blacklist no Redis** — o token é adicionado à lista negra com o tempo restante de vida como TTL, garantindo que expire automaticamente do Redis quando o JWT também expiraria.
+
+```
+POST /auth/logout
+  └─ Calcula tempo restante de vida do token
+  └─ Adiciona token ao Redis com TTL = tempo restante
+  └─ Remove dados do usuário do cache
+
+Próxima requisição com o mesmo token:
+  └─ TokenBlacklistMiddleware consulta Redis
+  └─ Token está na blacklist → 401 Unauthorized
+       { "message": "Token revogado. Por favor faça login novamente" }
+```
+
+O middleware é executado **antes** da validação do JWT — tokens na blacklist são bloqueados imediatamente, antes de qualquer verificação de rota ou perfil.
+
+---
+
+### Reset de Senha
+
+**Arquivo:** `Application/Features/Auth/ResetarSenha/ResetarSenhaCommandHandler.cs`
+
+Fluxo seguro de troca de senha em 5 etapas:
+
+```
+1. Verifica que nova senha não é vazia
+2. Busca usuário pelo e-mail do token autenticado (não aceita e-mail por parâmetro)
+3. Verifica se usuário está ACTIVE
+4. Valida a senha ATUAL via BCrypt (dupla confirmação de identidade)
+5. Gera novo hash BCrypt para a nova senha e salva no banco
+6. Invalida o token atual (blacklist no Redis)
+7. Gera e retorna um novo token JWT
+```
+
+> **Segurança:** o usuário precisa informar a senha atual para trocar a senha, mesmo já estando autenticado — isso previne ataques onde alguém com acesso temporário ao token tenta trocar a senha.
+
+---
+
+### Criptografia
+
+**Arquivo:** `Infrastructure/Services/Authentication/CryptoService.cs`
+
+O sistema usa dois algoritmos para finalidades distintas:
+
+#### BCrypt — Senhas
+
+```
+Cadastro:  senha em texto → BCrypt.HashPassword(workFactor: 12) → hash gravado no banco
+Login:     BCrypt.Verify(senhaDigitada, hashDoBanco) → true/false
+```
+
+- Algoritmo unidirecional — não é possível reverter o hash
+- `workFactor: 12` — custo computacional alto, resistente a brute force
+- Salt embutido no hash — cada senha gera um hash diferente mesmo com o mesmo valor
+
+#### AES-256 — CPF
+
+```
+Cadastro:  CPF limpo → AES.Encrypt(chaveAes) → valor encriptado no token JWT
+Outros microsserviços: AES.Decrypt(chaveAes) → CPF original recuperado
+```
+
+- Algoritmo bidirecional — permite recuperar o CPF original
+- IV (Initialization Vector) gerado aleatoriamente a cada encriptação — mesmo CPF gera valores diferentes
+- IV embutido nos primeiros 16 bytes do resultado em Base64
+- Chave AES configurada via variável de ambiente (`AES__KEY`) — nunca hardcoded
+
+```yaml
+AES__KEY: "W36tuZgAwZTkvGebRMEQJjGtbLNJRK6unGj1Ow5Rnm8="  # base64 de 32 bytes
+```
+
+---
+
+### Validações de Segurança no Login
+
+```
+✅ Usuário existe no banco
+✅ Status é ACTIVE (rejeita SUSPENDED e REMOVED)
+✅ Senha bate com o hash BCrypt
+✅ Token gerado com claims corretos e expiração configurada
+✅ Dados do usuário cacheados no Redis por 30 minutos
+```
+
+---
+
+### Endpoints
+
+| Método | Rota | Auth | Descrição |
+|---|---|---|---|
+| `POST` | `/api/v1/auth/login` | ❌ Público | Autenticação com e-mail e senha |
+| `POST` | `/api/v1/auth/logout` | ✅ DOADOR, GESTOR_ONG | Invalida o token atual |
+| `PUT` | `/api/v1/auth/reset-password` | ✅ DOADOR, GESTOR_ONG | Troca a senha e gera novo token |
+
+---
+
+### Resposta do Login
+
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "dataExpiracao": "2026-06-25T17:00:00Z",
+  "usuarioId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "email": "joao@email.com",
+  "status": "ACTIVE"
+}
+```
+
+---
+
+### Benefícios
+
+- 🔑 **Stateless** — o token carrega todas as informações necessárias, sem consulta ao banco a cada requisição
+
+- 🚫 **Logout real** — a blacklist no Redis garante que tokens revogados são imediatamente inválidos, mesmo que ainda estejam dentro do prazo de expiração
+
+- 🛡️ **CPF protegido** — o CPF nunca trafega em texto plano — é encriptado com AES-256 no token e só pode ser decriptado por microsserviços com a chave correta
+
+- 🔒 **Senhas seguras** — BCrypt com workFactor 12 e salt único por senha torna ataques de dicionário e rainbow table inviáveis
+
+- ⏱️ **TTL automático na blacklist** — tokens revogados expiram automaticamente do Redis no mesmo momento em que o JWT expiraria, sem acúmulo de dados
+
+- 🔄 **Troca de senha segura** — exige a senha atual mesmo com o usuário autenticado, e invalida o token anterior automaticamente
+
+- 🎯 **Autorização por perfil** — cada endpoint define explicitamente quais perfis têm acesso via `[Authorize(Roles = "...")]`, sem lógica de permissão espalhada no código
+
+- ⚡ **Cache de sessão** — dados do usuário cacheados no Redis por 30 minutos reduzem consultas ao banco em endpoints autenticados
+
+- ---
 
 ### Observabilidade com Grafana - Inserir em grafana
 
