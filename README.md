@@ -346,39 +346,24 @@ if (!_redis.IsConnected)
 
 ---
 
-## Observabilidade
+### Benefícios
 
-Todas as operações de cache são registradas no sistema de **logging estruturado**, incluindo hits, misses, erros e avisos de conectividade — visíveis nos dashboards do Grafana com filtro por `Caller = "CacheService"`:
-
-```
-[INFO]  Dado retornado do Redis.          { Key: "usuario:user@test.com" }
-[INFO]  Dado gravado no Redis.            { Key: "usuario:user@test.com" }
-[INFO]  Dado removido do Redis.           { Key: "usuario:user@test.com" }
-[WARN]  Token na Blacklist detectado.     { Key: "blacklist:eyJhbG..." }
-[WARN]  Redis não está conectado.         { Key: "usuario:user@test.com" }
-[ERROR] Erro ao deserializar chave.       { Key: "usuario:user@test.com" }
-```
-
----
-
-## Benefícios
-
-### ⚡ Performance
+#### ⚡ Performance
 A camada de cache reduz drasticamente a latência em endpoints de leitura frequente. Dados de usuário — consultados em **cada requisição autenticada** para validação de perfil e permissões — são retornados em menos de 1ms pelo Redis, em vez dos 5-50ms de uma consulta ao PostgreSQL.
 
-### 🔒 Segurança com Blacklist
+#### 🔒 Segurança com Blacklist
 A implementação de blacklist de tokens JWT resolve um problema clássico de autenticação stateless: **logout imediato e definitivo**. Em sistemas que usam apenas JWT sem blacklist, um token roubado permanece válido até expirar naturalmente. No Conexão Solidária, o logout invalida o token instantaneamente.
 
-### 🛡️ Resiliência por Design
+#### 🛡️ Resiliência por Design
 O Redis é tratado como **otimização**, não como dependência crítica. A aplicação degrada graciosamente quando o cache está indisponível — buscando os dados diretamente do banco — sem propagar erros para o usuário final.
 
-### 💰 Redução de Custo
+#### 💰 Redução de Custo
 Em arquiteturas cloud com cobrança por operação de banco de dados (como RDS na AWS), a camada de cache reduz diretamente o número de consultas ao PostgreSQL — traduzindo em economia real de infraestrutura em produção.
 
-### 🔄 Consistência Garantida
+#### 🔄 Consistência Garantida
 A invalidação proativa do cache em toda operação de escrita garante que os dados exibidos ao usuário **nunca sejam stale** após uma modificação — eliminando a classe de bugs de "dado desatualizado na tela".
 
-### 📊 Rastreabilidade
+#### 📊 Rastreabilidade
 Toda operação de cache é correlacionada ao `CorrelationId` da requisição original, permitindo reconstruir no Grafana exatamente quais dados foram lidos do cache e quais vieram do banco em qualquer trace específico.
 
 ---
