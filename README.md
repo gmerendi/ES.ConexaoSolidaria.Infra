@@ -3030,7 +3030,7 @@ Todos os ConfigMaps são montados como volumes no pod do Grafana — os dashboar
 
 ## Documentaçao
 
-- [Casos de Uso](./docs/use-cases/)
+- [Casos de Uso](./docs/CasosDeUso.md)
 - [Diagramas](./docs/diagrams/)
 - [ADR — Architecture Decision Records](./docs/Adr.md)
 - [Matriz de Rastreabilidade](./docs/traceability-matrix/)
