@@ -1,0 +1,391 @@
+apiVersion: 1
+groups:
+    - orgId: 1
+      name: Each Minute
+      folder: ConexaoSolidaria
+      interval: 1m
+      rules:
+        - uid: afs0zpqo9hon4d
+          title: Memory exceeding 80%
+          condition: C
+          data:
+            - refId: A
+              queryType: "0"
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: PA67C5EADE9207728
+              model:
+                application:
+                    filter: Memory
+                countTriggersBy: ""
+                datasource:
+                    type: alexanderzobnin-zabbix-datasource
+                    uid: PA67C5EADE9207728
+                evaltype: "0"
+                functions: []
+                group:
+                    filter: Zabbix servers
+                hide: false
+                host:
+                    filter: Zabbix server
+                intervalMs: 1000
+                item:
+                    filter: Memory utilization
+                itemTag:
+                    filter: ""
+                macro:
+                    filter: ""
+                maxDataPoints: 43200
+                options:
+                    count: false
+                    disableDataAlignment: false
+                    showDisabledItems: false
+                    skipEmptyValues: false
+                    useTrends: default
+                    useZabbixValueMapping: false
+                proxy:
+                    filter: ""
+                queryType: "0"
+                refId: A
+                resultFormat: time_series
+                schema: 12
+                table:
+                    skipEmptyValues: false
+                tags:
+                    filter: ""
+                textFilter: ""
+                trigger:
+                    filter: ""
+            - refId: B
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params: []
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                            - B
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                reducer: last
+                refId: B
+                type: reduce
+            - refId: C
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 80
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                            - C
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: B
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: threshold
+          noDataState: NoData
+          execErrState: Error
+          for: 1m
+          annotations:
+            summary: Server Memory above 80%
+          isPaused: false
+          notification_settings:
+            receiver: grafana-default-email
+        - uid: afs0zuov8q51ca
+          title: CPU exceeding 50%
+          condition: C
+          data:
+            - refId: A
+              queryType: "0"
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: PA67C5EADE9207728
+              model:
+                application:
+                    filter: CPU
+                countTriggersBy: ""
+                datasource:
+                    type: alexanderzobnin-zabbix-datasource
+                    uid: PA67C5EADE9207728
+                evaltype: "0"
+                functions: []
+                group:
+                    filter: Zabbix servers
+                hide: false
+                host:
+                    filter: Zabbix server
+                intervalMs: 1000
+                item:
+                    filter: CPU utilization
+                itemTag:
+                    filter: ""
+                macro:
+                    filter: ""
+                maxDataPoints: 43200
+                options:
+                    count: false
+                    disableDataAlignment: false
+                    showDisabledItems: false
+                    skipEmptyValues: false
+                    useTrends: default
+                    useZabbixValueMapping: false
+                proxy:
+                    filter: ""
+                queryType: "0"
+                refId: A
+                resultFormat: time_series
+                schema: 12
+                table:
+                    skipEmptyValues: false
+                tags:
+                    filter: ""
+                textFilter: ""
+                trigger:
+                    filter: ""
+            - refId: B
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params: []
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                            - B
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                reducer: last
+                refId: B
+                type: reduce
+            - refId: C
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 50
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                            - C
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: B
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: threshold
+          noDataState: NoData
+          execErrState: Error
+          for: 1m
+          annotations:
+            summary: CPU Above 50%
+          isPaused: false
+          notification_settings:
+            receiver: grafana-default-email
+        - uid: dfs105iahcohsb
+          title: Disk exceeding 50%
+          condition: C
+          data:
+            - refId: A
+              queryType: "0"
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: PA67C5EADE9207728
+              model:
+                application:
+                    filter: Storage
+                countTriggersBy: ""
+                datasource:
+                    type: alexanderzobnin-zabbix-datasource
+                    uid: PA67C5EADE9207728
+                evaltype: "0"
+                functions: []
+                group:
+                    filter: Zabbix servers
+                host:
+                    filter: Zabbix server
+                intervalMs: 1000
+                item:
+                    filter: Free swap space in %
+                itemTag:
+                    filter: ""
+                macro:
+                    filter: ""
+                maxDataPoints: 43200
+                options:
+                    count: false
+                    disableDataAlignment: false
+                    showDisabledItems: false
+                    skipEmptyValues: false
+                    useTrends: default
+                    useZabbixValueMapping: false
+                proxy:
+                    filter: ""
+                queryType: "0"
+                refId: A
+                resultFormat: time_series
+                schema: 12
+                table:
+                    skipEmptyValues: false
+                tags:
+                    filter: ""
+                textFilter: ""
+                trigger:
+                    filter: ""
+            - refId: B
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params: []
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                            - B
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                reducer: last
+                refId: B
+                type: reduce
+            - refId: C
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 50
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                            - C
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: B
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: threshold
+          noDataState: NoData
+          execErrState: Error
+          for: 1m
+          annotations:
+            summary: Server Disk above 80%
+          isPaused: false
+          notification_settings:
+            receiver: grafana-default-email
+        - uid: efs10i5nczoqob
+          title: Doacoes acima de 3
+          condition: C
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: PBFA97CFB590B2093
+              model:
+                disableTextWrap: false
+                editorMode: builder
+                expr: campanha_doacoes_total{instance="cs-donationworker-api:8080"}
+                fullMetaSearch: false
+                includeNullMetadata: true
+                instant: true
+                intervalMs: 1000
+                legendFormat: __auto
+                maxDataPoints: 43200
+                range: false
+                refId: A
+                useBackend: false
+            - refId: C
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 3
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                            - C
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: threshold
+          noDataState: NoData
+          execErrState: Error
+          for: 1m
+          annotations:
+            summary: Número de doações maior que 3
+          isPaused: false
+          notification_settings:
+            receiver: grafana-default-email
