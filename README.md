@@ -73,6 +73,7 @@ O sistema possui os seguintes features implementados: <br>
 - [Sistema de Logging Estruturado](#sistema-de-logging-estruturado)
 - [Sistema de Cache - Redis](#sistema-de-cache)
 - [Sistema de Busca Avançada - Elasticsearch](#sistema-de-busca-avancada-elasticsearch)
+- [Sistema de Gerenciamento de Erros](#sistema-de-gerenciamento-de-erros)
 ---
 
 
@@ -456,6 +457,242 @@ A busca utiliza `Fuzziness: AUTO`, que ajusta automaticamente a tolerância com 
 - 🔀 **Desacoplamento** — a busca não concorre com as operações transacionais do banco de dados PostgreSQL, garantindo que buscas intensas não impactem o cadastro de campanhas e doações
 
 - 🔁 **Índice sempre atualizado** — qualquer alteração em uma campanha é refletida automaticamente no índice, garantindo que os resultados de busca estejam sempre sincronizados com o estado real do sistema
+
+---
+
+## Sistema de Gerenciamento de Erros
+
+O tratamento de erros é feito em **três camadas complementares**, garantindo que nenhuma exceção chegue ao cliente sem ser tratada, categorizada e registrada:
+
+```
+Request
+  └─ CorrelationMiddleware        → gera/propaga o ID de rastreamento
+       └─ ExceptionHandlingMiddleware  → captura e formata todos os erros
+            └─ Controller
+                 └─ Handler (Application)
+                      └─ Entidade / Value Object (Domain)
+                           └─ AssertionConcern → lança DomainException
+```
+
+---
+
+### Exception Handling Middleware
+
+**Arquivo:** `Middlewares/ExceptionHandlingMiddleware.cs`
+
+Middleware global que intercepta todas as exceções não tratadas e as converte em respostas HTTP padronizadas. Três tipos de exceção são tratados:
+
+#### 1 DomainException — Erros de negócio
+
+Lançada pelas entidades e value objects do domínio quando uma regra de negócio é violada.
+
+```json
+{
+  "title": "A domain error occurred.",
+  "status": 422,
+  "errors": {
+    "Domain": ["O título deve ter no mínimo 5 e no máximo 200 caracteres."]
+  },
+  "traceId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "code": "422_TITLE_LENGTH_INVALID"
+}
+```
+
+O status HTTP é extraído automaticamente do prefixo do `ErrorCode`:
+
+| Prefixo do código | Status HTTP |
+|---|---|
+| `400_` | 400 Bad Request |
+| `401_` | 401 Unauthorized |
+| `403_` | 403 Forbidden |
+| `404_` | 404 Not Found |
+| `422_` | 422 Unprocessable Entity |
+| `500_` | 500 Internal Server Error |
+
+#### 2 BadHttpRequestException — Erros de validação de entrada
+
+Captura falhas de Data Annotations e model binding antes mesmo de chegar ao handler.
+
+```json
+{
+  "code": "400_NAME_REQUIRED",
+  "error": "O campo Nome Completo é obrigatório."
+}
+```
+
+#### 3 Exception — Erros inesperados
+
+Qualquer exceção não prevista retorna um erro genérico sem expor detalhes internos ao cliente, mas registra o stack trace completo no log.
+
+```json
+{
+  "code": "500_ERRO_INESPERADO",
+  "error": "Ocorreu um erro inesperado. Por favor, tente novamente."
+}
+```
+
+---
+
+### DomainException
+
+**Arquivo:** `Domain/Shared/Exceptions/DomainExceptions.cs`
+
+Exceção customizada que carrega um `ErrorCode` semântico além da mensagem. Possui quatro sobrecargas:
+
+```csharp
+// 1. Mensagem buscada automaticamente do arquivo .resx pelo código
+throw new DomainException("422_TITLE_LENGTH_INVALID");
+
+// 2. Mensagem customizada manual
+throw new DomainException("422_TITLE_LENGTH_INVALID", "Título inválido.");
+
+// 3. Com InnerException — mensagem do .resx
+throw new DomainException("500_ERRO_INESPERADO", innerException);
+
+// 4. Com InnerException — mensagem customizada
+throw new DomainException("500_ERRO_INESPERADO", "Erro ao processar.", innerException);
+```
+
+O `ErrorCode` é sempre normalizado para **UPPER_CASE** e nunca fica em branco — se vazio, recebe o valor padrão `DOMAIN_ERROR`.
+
+---
+
+### AssertionConcern — Validações do Domínio
+
+**Arquivo:** `Domain/Shared/Helpers/AssertionConcern.cs`
+
+Classe utilitária estática com métodos de asserção usados pelas entidades e value objects para validar seus próprios dados antes de se construir. Cada método lança uma `DomainException` com o código de erro correspondente se a condição não for satisfeita.
+
+| Método | O que valida |
+|---|---|
+| `AssertArgumentNotNull` | Objeto não é nulo |
+| `AssertArgumentNotEmpty` | String não é nula, vazia ou só espaços |
+| `AssertArgumentLength` | String dentro do tamanho mínimo e máximo (com trim) |
+| `AssertArgumentRange` | Decimal dentro de um range min/max |
+| `AssertArgumentNotLesserOrEqualZero` | Decimal maior que zero |
+
+**Exemplo de uso em uma entidade:**
+
+```csharp
+public static TituloCampanha Create(string valor)
+{
+    AssertionConcern.AssertArgumentNotEmpty(valor, "400_TITLE_REQUIRED");
+    AssertionConcern.AssertArgumentLength(valor, 5, 200, "400_TITLE_LENGTH_INVALID");
+    return new TituloCampanha(valor.Trim());
+}
+```
+
+---
+
+### Benefícios
+
+- 🎯 **Respostas padronizadas** — todos os erros seguem o mesmo contrato de resposta, facilitando o tratamento no frontend e nos microsserviços consumidores
+
+- 🔍 **Rastreabilidade total** — o `x-correlation-id` percorre toda a cadeia de processamento, permitindo localizar qualquer requisição nos logs do DynamoDB com um único ID
+
+- 🛡️ **Segurança por padrão** — erros inesperados nunca expõem stack traces, mensagens técnicas ou detalhes de infraestrutura ao cliente
+
+- 📋 **Catálogo centralizado de erros** — todas as mensagens ficam no `Errors.resx`, eliminando strings duplicadas no código e facilitando manutenção e futura internacionalização
+
+- ⚡ **Log assíncrono** — a persistência no DynamoDB não bloqueia a resposta ao cliente, mantendo a latência da API independente da disponibilidade do serviço de log
+
+- 🏗️ **Validação no domínio** — o `AssertionConcern` garante que entidades e value objects nunca existam em estado inválido, prevenindo dados corrompidos antes de chegarem ao banco
+
+- 🔀 **Status HTTP semântico automático** — o prefixo do `ErrorCode` (`400_`, `422_`, `403_`) determina o status HTTP sem necessidade de mapeamentos manuais adicionais
+
+- 📊 **Observabilidade integrada** — cada erro é registrado no DynamoDB com nível de severidade, tipo (LOG/EVENT), caller, stack trace e correlation ID, formando uma trilha de auditoria completa
+
+- 🔄 **Result Pattern** — handlers retornam `Result<T>` em vez de lançar exceções como fluxo de controle, tornando o código mais previsível e testável
+
+- 🌐 **Pronto para internacionalização** — a separação entre código de erro e mensagem no `.resx` permite adicionar suporte a múltiplos idiomas sem alterar nenhuma linha de lógica de negócio
+
+---
+
+### Result Pattern
+
+**Arquivo:** `Domain/Shared/Primitives/Result.cs`
+
+Os handlers da camada de Application nunca lançam exceções diretamente — retornam um objeto `Result<T>` que encapsula sucesso ou falha. O controller decide como responder com base no `IsSuccess`.
+
+```csharp
+// Sucesso
+return Result<T>.Success(value);
+
+// Falha — busca a mensagem no .resx pelo código
+return Result<T>.Failure("422_EMAIL_ALREADY_EXISTS");
+```
+
+```csharp
+// No controller
+var result = await _handler.HandleAsync(command);
+
+if (!result.IsSuccess)
+    return BadRequest(result.Error);  // mensagem amigável do .resx
+
+return Ok(result.Value);
+```
+
+Para operações sem retorno de dados, existe o `VoidResult`:
+
+```csharp
+return VoidResult.Success();
+return VoidResult.Failure("mensagem de erro");
+```
+
+---
+
+### Catálogo de Erros — Errors.resx
+
+**Arquivo:** `Domain/Shared/Resources/Errors.resx`
+
+Todos os códigos de erro e suas mensagens amigáveis estão centralizados em um arquivo de recursos `.resx`. Isso garante:
+
+- **Consistência** — a mesma mensagem para o mesmo erro em qualquer parte do sistema
+- **Manutenibilidade** — alterar uma mensagem em um único lugar reflete em todo o sistema
+- **Internacionalização** — suporte futuro a múltiplos idiomas sem alterar código
+
+```
+ErrorCode                    →  Mensagem
+─────────────────────────────────────────────────────
+400_COMMAND_INVALID          →  O Comando não deve ser nulo.
+400_CPF_REQUIRED             →  O campo CPF é obrigatório.
+400_EMAIL_REQUIRED           →  O campo E-mail é obrigatório.
+400_NAME_REQUIRED            →  O campo Nome Completo é obrigatório.
+422_CPF_INVALID              →  O CPF informado é inválido.
+422_EMAIL_ALREADY_EXISTS     →  O e-mail informado já está cadastrado.
+500_ERRO_INESPERADO          →  Ocorreu um erro inesperado. Por favor, tente novamente.
+```
+
+Se um código não existir no `.resx`, o sistema retorna `"Erro não catalogado: {código}"` como fallback — nunca expõe stack traces ou mensagens técnicas ao cliente.
+
+---
+
+### Fluxo Completo de um Erro de Domínio
+
+```
+1. Controller recebe request
+2. CorrelationMiddleware atribui x-correlation-id: "abc-123"
+3. Handler chama entidade
+4. Entidade chama AssertionConcern.AssertArgumentLength(titulo, 5, 200, "422_TITLE_LENGTH_INVALID")
+5. Título tem 2 caracteres → AssertionConcern lança DomainException("422_TITLE_LENGTH_INVALID")
+6. DomainException busca mensagem no .resx → "O título deve ter entre 5 e 200 caracteres."
+7. ExceptionHandlingMiddleware captura a exceção
+8. Extrai status code do prefixo "422_" → HttpStatusCode.UnprocessableEntity
+9. Loga o erro no DynamoDB com correlationId "abc-123"
+10. Retorna ao cliente:
+
+HTTP 422 Unprocessable Entity
+x-correlation-id: abc-123
+
+{
+  "title": "A domain error occurred.",
+  "status": 422,
+  "errors": { "Domain": ["O título deve ter entre 5 e 200 caracteres."] },
+  "traceId": "abc-123",
+  "code": "422_TITLE_LENGTH_INVALID"
+}
+```
+
 
 ---
 
