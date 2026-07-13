@@ -1880,7 +1880,7 @@ TODO - Verificar telas de gateway swagger no AWS
 
 ---
 
-## Benefícios
+### Benefícios
 
 - 🔒 **Único ponto de entrada** — nenhum microsserviço é acessível diretamente da internet, independente do ambiente
 
