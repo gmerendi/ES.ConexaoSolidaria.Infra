@@ -800,7 +800,7 @@ services:
     image: ${DOCKER_REGISTRY-}cs-dynamo-pg-proxy:latest
     build:
       context: ../../ES.ConexaoSolidaria.DynamoPgProxy
-      dockerfile: Dockerfile
+      dockerfile: src/Dockerfile
     container_name: cs-dynamo-pg-proxy
     ports:
       - "5450:5450"
