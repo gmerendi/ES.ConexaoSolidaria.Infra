@@ -1894,6 +1894,184 @@ TODO - Verificar telas de gateway swagger no AWS
 
 - 🏗️ **Infrastructure as Code** — o AWS API Gateway é 100% provisionado via Terraform, garantindo reproducibilidade e histórico de mudanças
 
+---
+
+## Proxy Postgres - Dynamo
+
+O Grafana suporta DynamoDB nativamente apenas via plugin pago. As tabelas de logs da plataforma (`cs-audit-log` e `cs-app-logs`) ficam no DynamoDB — inacessíveis pelo Grafana sem custo adicional.  Por esse motivo, criamos um proxy postgres - dynamo que **implementa o protocolo wire do PostgreSQL** e traduz queries SQL em operações de `Scan` no DynamoDB:
+
+```
+Grafana (datasource PostgreSQL)
+  └─ conecta em cs-dynamo-pg-proxy:5450
+       └─ envia SQL: SELECT * FROM audit_log WHERE operation = 'ADDED'
+            └─ proxy traduz para DynamoDB Scan com FilterExpression
+                 └─ retorna resultado no formato de tabela PostgreSQL
+                      └─ Grafana exibe como se fosse um banco relacional
+```
+
+Para o Grafana, é um banco PostgreSQL comum. Para o DynamoDB, é um cliente boto3. O proxy faz a tradução no meio.
+
+---
+
+### Arquitetura
+
+**Arquivo:** `pg_dynamo_proxy.py` — ~450 linhas de Python puro, sem framework web.
+
+```
+┌─────────────────────────────────────────────────────┐
+│              DynamoDB PG Proxy (Python)             │
+│                                                     │
+│  TCP :5450 ──► PostgreSQL Wire Protocol v3         │
+│                    │                                │
+│              SQL Parser                             │
+│                    │                                │
+│         ┌──────────┴──────────┐                    │
+│         ▼                     ▼                     │
+│    audit_log            app_logs                    │
+│    (cs-audit-log)       (cs-app-logs)               │
+│         │                     │                     │
+│         └──────────┬──────────┘                    │
+│                    ▼                                │
+│            boto3 DynamoDB Scan                      │
+└─────────────────────────────────────────────────────┘
+```
+
+---
+
+### Tabelas Disponíveis
+
+#### `audit_log` → `cs-audit-log` (DynamoDB)
+
+| Coluna SQL | Campo DynamoDB | Tipo | Descrição |
+|---|---|---|---|
+| `timestamp` | `SK` | text | Data/hora (prefixo `TS#` removido automaticamente) |
+| `service` | `ServiceName` | text | Microsserviço que realizou a operação |
+| `operation` | `Operation` | text | `ADDED`, `MODIFIED`, `DELETED` |
+| `changed_by` | `ChangedBy` | text | E-mail do responsável |
+| `resource_id` | `ResourceId` | text | GUID da entidade alterada |
+| `ip_address` | `IpAddress` | text | IP de origem |
+| `pk` | `PK` | text | Chave primária composta |
+| `payload` | `Payload` | text | JSON com dados da operação (diff) |
+
+#### `app_logs` → `cs-app-logs` (DynamoDB)
+
+| Coluna SQL | Campo DynamoDB | Tipo | Descrição |
+|---|---|---|---|
+| `timestamp` | `Timestamp` | text | Data/hora ISO 8601 |
+| `level` | `LogLevel` | text | `Information`, `Warning`, `Error` |
+| `caller` | `Caller` | text | Classe que gerou o log |
+| `message` | `Message` | text | Mensagem do log |
+| `correlation_id` | `CorrelationId` | text | ID de rastreamento da requisição |
+| `data` | `Data` | text | Payload JSON contextual |
+| `type` | `Type` | int | `1` = LOG, `2` = EVENT |
+
+---
+
+### SQL Suportado
+
+O proxy implementa um parser SQL que suporta as operações mais comuns usadas pelo Grafana:
+
+#### SELECT
+
+```sql
+-- Todas as colunas
+SELECT * FROM audit_log
+
+-- Colunas específicas
+SELECT timestamp, service, operation, changed_by FROM audit_log
+
+-- Com filtro
+SELECT * FROM app_logs WHERE level = 'Error'
+
+-- Com LIKE (traduzido para contains() no DynamoDB)
+SELECT * FROM app_logs WHERE message LIKE '%doacao%'
+
+-- Com BETWEEN
+SELECT * FROM audit_log WHERE timestamp BETWEEN '2026-06-01' AND '2026-06-30'
+
+-- Com LIMIT
+SELECT * FROM app_logs LIMIT 100
+
+-- Com ORDER BY (ordenação aplicada após o Scan)
+SELECT * FROM audit_log WHERE operation = 'MODIFIED' ORDER BY timestamp DESC
+```
+
+#### SELECT DISTINCT
+
+```sql
+-- Usado pelo Grafana para popular variáveis de template
+SELECT DISTINCT service FROM audit_log
+SELECT DISTINCT level FROM app_logs
+SELECT DISTINCT operation FROM audit_log
+```
+
+#### COUNT
+
+```sql
+SELECT COUNT(*) AS total FROM audit_log
+SELECT COUNT(*) AS total FROM app_logs WHERE level = 'Error'
+```
+
+#### Queries de sistema (respondidas localmente)
+
+```sql
+SELECT 1                    -- health check do Grafana
+SELECT version()            -- versão do "PostgreSQL"
+SELECT current_schema()     -- schema atual
+SELECT current_database()   -- banco atual
+SELECT * FROM information_schema.tables   -- lista as tabelas disponíveis
+SELECT * FROM information_schema.columns  -- colunas de uma tabela
+```
+
+#### Macros do Grafana (ignoradas graciosamente)
+
+```sql
+-- Macros de tempo são substituídas por 1=1 (sem filtro)
+$__timeFilter(timestamp)
+$__timeGroup(timestamp, '1h')
+```
+
+---
+
+### Protocolo PostgreSQL Wire v3
+
+O proxy implementa manualmente as mensagens do protocolo PostgreSQL necessárias para o Grafana funcionar:
+
+| Mensagem | Tipo | Descrição |
+|---|---|---|
+| `AuthenticationOk` | `R` | Aceita conexão sem senha |
+| `ParameterStatus` | `S` | Informa server_version, encoding, etc |
+| `ReadyForQuery` | `Z` | Pronto para receber query |
+| `RowDescription` | `T` | Schema das colunas do resultado |
+| `DataRow` | `D` | Uma linha de dados |
+| `CommandComplete` | `C` | Fim da query com contagem de linhas |
+| `ErrorResponse` | `E` | Erro com código SQL |
+| Simple Query | `Q` | Query SQL simples |
+| Parse/Bind/Execute | `P/B/E` | Prepared statements (aceitos, sem execução real) |
+
+---
+
+### Infraestrutura
+
+**Runtime:** Python 3.12 Alpine  
+**Dependência:** apenas `boto3==1.34.0`  
+**Imagem:** ~50MB (Alpine + Python + boto3)  
+**Porta:** 5450 (diferente da 5432 padrão para não conflitar com PostgreSQL real)
+
+---
+
+## Benefícios
+
+- 💰 **Zero custo adicional** — elimina a necessidade do plugin pago do Grafana para DynamoDB, usando o datasource PostgreSQL nativo que já está disponível
+
+- 🔌 **Transparente para o Grafana** — nenhuma configuração especial no Grafana além do datasource PostgreSQL — dashboards, variáveis e alertas funcionam normalmente
+
+- 🪶 **Leve** — ~450 linhas de Python puro, sem framework web, sem ORM, sem dependências além do boto3
+
+- 🔄 **Paginação automática** — o proxy pagina o DynamoDB Scan automaticamente, retornando todos os registros independente do volume
+
+- 🛠️ **Multi-ambiente** — conecta ao DynamoDB Local em desenvolvimento e ao DynamoDB real da AWS em produção, apenas mudando variáveis de ambiente
+
 
 ---
 
