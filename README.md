@@ -77,7 +77,7 @@ O sistema possui os seguintes features implementados: <br>
 - [Sistema de Audit Log](#sistema-de-audit-log)
 - [Sistema de Autenticaçao](#sistema-de-autenticaçao)
 - [Sistema de Mensageria](#sistema-de-mensageria)
-- [Sistema de Notificaçao](#sistema-de-notificaçao)
+- [Sistema de Notificaçoes](#sistema-de-notificaçoes)
 - [Api Gateway](#api-gateway)
 - [Proxy PostGres - Dynamo](#proxy-postgres-dynamo)
 - [Observabilidade](#observabilidade)
