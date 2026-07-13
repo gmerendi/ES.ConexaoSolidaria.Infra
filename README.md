@@ -17,12 +17,8 @@ Responsável por:
 - [Perfis e Regras de Acesso](#perfis-e-regras-de-acesso)
 - [Endpoints](#endpoints)
 - [Como Rodar Localmente](#como-rodar-localmente)
-- [Variáveis de Ambiente](#variáveis-de-ambiente)
 - [Observabilidade](#observabilidade)
-- [Eventos de Domínio](#eventos-de-dominio)
 - [Testes](#testes)
-- [Estrutura do Projeto](#estrutura-do-projeto)
-- [Github Actions](#github-actions)
 
 ---
 
@@ -78,9 +74,11 @@ O sistema possui os seguintes features implementados: <br>
 - [Sistema de Autenticaçao](#sistema-de-autenticaçao)
 - [Sistema de Mensageria](#sistema-de-mensageria)
 - [Sistema de Notificaçoes](#sistema-de-notificaçoes)
+- [Testes](#testes)
+- [CI/CD - Github Actions](#github-actions)
 - [Api Gateway](#api-gateway)
 - [Proxy PostGreSql - Dynamo](#proxy-postgresql-dynamo)
-- [Observabilidade](#observabilidade)
+- [Frontend](#frontend)
 - [Observabilidade](#observabilidade)
 - [Atendimento a LGPD](#atendimento-a-LGPD)
 ---
@@ -2060,7 +2058,7 @@ O proxy implementa manualmente as mensagens do protocolo PostgreSQL necessárias
 
 ---
 
-## Benefícios
+### Benefícios
 
 - 💰 **Zero custo adicional** — elimina a necessidade do plugin pago do Grafana para DynamoDB, usando o datasource PostgreSQL nativo que já está disponível
 
@@ -2071,6 +2069,271 @@ O proxy implementa manualmente as mensagens do protocolo PostgreSQL necessárias
 - 🔄 **Paginação automática** — o proxy pagina o DynamoDB Scan automaticamente, retornando todos os registros independente do volume
 
 - 🛠️ **Multi-ambiente** — conecta ao DynamoDB Local em desenvolvimento e ao DynamoDB real da AWS em produção, apenas mudando variáveis de ambiente
+
+
+---
+## Frontend
+
+O frontend é uma **SPA (Single Page Application)** que roda completamente no browser, sem dependência de servidor para renderização. Toda a comunicação com o backend é feita via HTTP diretamente para o **API Gateway** e foi desenvolvido em **Blazor WebAssembly** com **MudBlazor** como biblioteca de componentes.
+
+```
+Browser
+  └─ Blazor WebAssembly (.NET 8)
+       └─ HttpClient → API Gateway
+            ├─ cs-usuarios-api
+            ├─ cs-campanhas-api
+            └─ cs-campanhas-api (doações)
+```
+
+---
+
+### Stack
+
+| Tecnologia | Versão | Finalidade |
+|---|---|---|
+| **Blazor WebAssembly** | .NET 8 | Framework SPA em C# |
+| **MudBlazor** | 9.5.0 | Componentes UI (Material Design) |
+| **Blazored.LocalStorage** | 4.5.0 | Persistência do token JWT no browser |
+| **System.IdentityModel.Tokens.Jwt** | 8.0.2 | Leitura de claims do JWT no cliente |
+| **Bootstrap** | 5 | Grid e utilitários CSS complementares |
+| **Nginx** | Alpine | Servidor de arquivos estáticos em produção |
+
+---
+
+### Estrutura de Páginas
+
+#### Área Pública (sem autenticação)
+
+| Página | Rota | Descrição |
+|---|---|---|
+| `LandingPage` | `/` | Página inicial com hero, números de impacto, campanhas ativas e footer |
+| `Login` | `/login` | Formulário de autenticação com suporte a `returnUrl` |
+| `CadastroDoador` | `/cadastro` | Cadastro de novo usuário doador |
+
+#### Portal do Doador (requer autenticação)
+
+| Página | Rota | Descrição |
+|---|---|---|
+| `Campanhas` | `/campanhas` | Listagem de campanhas ativas com cards |
+| `NovaDoacao` | `/doacoes/nova` | Formulário de doação com comprovante de sucesso |
+| `MinhasDoacoes` | `/minhas-doacoes` | Histórico de doações do doador logado |
+| `Perfil` | `/perfil` | Dados do usuário com edição de nome, CPF e senha |
+
+#### Área Administrativa (requer perfil `GESTOR_ONG`)
+
+| Página | Rota | Descrição |
+|---|---|---|
+| `GerenciamentoCampanhas` | `/admin/campanhas` | Criar, buscar, editar, cancelar e concluir campanhas |
+| `AdminUsuarios` | `/admin/usuarios` | Buscar usuários por e-mail, suspender, ativar e alterar perfil |
+| `DoacoesPorCampanha` | `/admin/doacoes/campanha` | Relatório de doações por campanha |
+| `DoacoesPorUsuario` | `/admin/doacoes/usuario` | Relatório de doações por usuário |
+
+---
+
+### Autenticação — JwtAuthStateProvider
+
+**Arquivo:** `Auth/JwtAuthStateProvider.cs`
+
+O estado de autenticação do Blazor é gerenciado pelo `JwtAuthStateProvider`, que implementa o `AuthenticationStateProvider` nativo. Não usa cookies — o token JWT é persistido no **localStorage** do browser via Blazored.LocalStorage.
+
+```
+Login bem-sucedido
+  └─ AuthService chama POST /api/v1/auth/login
+       └─ Recebe token JWT
+       └─ Extrai perfil e expiração diretamente do JWT (mais confiável que o campo da API)
+       └─ Salva no localStorage:
+            ├─ "cs_token"   → string JWT
+            └─ "cs_usuario" → objeto UsuarioLogado (guid, email, perfil, status, expiração)
+       └─ Notifica o Blazor da mudança de estado → componentes reagem automaticamente
+```
+
+#### Verificação de expiração
+
+A cada `GetAuthenticationStateAsync()`, o provider verifica se o token já expirou:
+
+```csharp
+if (usuario.Expiracao <= DateTime.UtcNow)
+{
+    // limpa localStorage — token obsoleto
+    await _localStorage.RemoveItemAsync(TokenKey);
+    await _localStorage.RemoveItemAsync(UsuarioKey);
+    return _anonimo;  // usuário vira anônimo automaticamente
+}
+```
+
+#### Claims disponíveis nos componentes
+
+```csharp
+ClaimTypes.NameIdentifier  // GUID do usuário
+ClaimTypes.Email           // e-mail
+ClaimTypes.Role            // DOADOR ou GESTOR_ONG
+"status"                   // ACTIVE, SUSPENDED
+```
+
+#### Proteção de rotas
+
+```razor
+@attribute [Authorize]                        // qualquer usuário autenticado
+@attribute [Authorize(Roles = "GESTOR_ONG")]  // apenas gestores
+```
+
+Usuários não autenticados são redirecionados para `/login` automaticamente pelo `RedirectToLogin` shared component.
+
+---
+
+### Serviços
+
+#### AuthService
+
+**Arquivo:** `Services/AuthService.cs`
+
+Responsável por todas as operações de autenticação:
+
+| Método | Endpoint | Autenticação |
+|---|---|---|
+| `LoginAsync` | `POST /api/v1/auth/login` | Pública |
+| `LogoutAsync` | `POST /api/v1/auth/logout` | Bearer token |
+| `CadastrarDoadorAsync` | `POST /api/v1/usuario` | Pública |
+| `AlterarSenhaAsync` | `PUT /api/v1/auth/reset-password` | Bearer token |
+
+#### CampanhaPublicaService
+
+**Arquivo:** `Services/CampanhaPublicaService.cs`
+
+Consome a rota pública de campanhas — **não exige token**, usada tanto na landing page quanto no portal autenticado:
+
+```csharp
+// Busca campanhas ativas com paginação
+GET /api/v1/Campanhas/todas?Pagina=1&TamanhoPagina=6
+```
+
+#### CampanhaAdminService
+
+**Arquivo:** `Services/CampanhaAdminService.cs`
+
+Consome todas as rotas autenticadas de campanhas para o gestor:
+
+| Método | Endpoint |
+|---|---|
+| `CriarAsync` | `POST /api/v1/Campanhas` |
+| `BuscarAsync` | `GET /api/v1/Campanhas/busca?Termo=` |
+| `ObterPorGuidAsync` | `GET /api/v1/Campanhas?Guid=` |
+| `AlterarAsync` | `PUT /api/v1/Campanhas` |
+| `CancelarAsync` | `PUT /api/v1/Campanhas/cancel?Guid=` |
+| `ConcluirAsync` | `PUT /api/v1/Campanhas/concluir?Guid=` |
+
+#### DoacaoService
+
+**Arquivo:** `Services/DoacaoService.cs`
+
+| Método | Endpoint | Descrição |
+|---|---|---|
+| `CriarDoacaoAsync` | `POST /api/v1/Doacoes` | Registra nova doação |
+| `ObterMinhasDoacoesAsync` | `GET /api/v1/Doacoes/self` | Doações do usuário logado |
+| `ObterPorCampanhaAsync` | `GET /api/v1/Doacoes/campanha?GuidCampanha=` | Relatório admin por campanha |
+| `ObterPorUsuarioAsync` | `GET /api/v1/Doacoes/usuario?Email=` | Relatório admin por usuário |
+
+#### UsuarioService
+
+**Arquivo:** `Services/UsuarioService.cs`
+
+| Método | Endpoint | Perfil |
+|---|---|---|
+| `ObterPorEmailAsync` | `GET /api/v1/usuario?Email=` | DOADOR / GESTOR_ONG |
+| `AlterarAsync` | `PUT /api/v1/usuario/alterar` | DOADOR / GESTOR_ONG |
+| `ExcluirAsync` | `DELETE /api/v1/usuario?Email=` | DOADOR (própria conta) |
+| `SuspenderAsync` | `PUT /api/v1/usuario/suspender` | GESTOR_ONG |
+| `AtivarAsync` | `PUT /api/v1/usuario/ativar` | GESTOR_ONG |
+| `AlterarParaGestorAsync` | `PUT /api/v1/usuario/alterar-para-gestor` | GESTOR_ONG |
+| `AlterarParaDoadorAsync` | `PUT /api/v1/usuario/alterar-para-doador` | GESTOR_ONG |
+
+---
+
+### Layouts
+
+| Layout | Usado em | Descrição |
+|---|---|---|
+| `LandingLayout` | Landing page | Sem sidebar, header público com botões Login/Cadastrar |
+| `EmptyLayout` | Login, Cadastro | Página limpa, sem navegação |
+| `MainLayout` | Portal e Admin | Sidebar com NavMenu, área de conteúdo principal |
+
+---
+
+### Modelo de Dados — CampanhaCard
+
+O componente `CampanhaCard` exibe uma campanha com barra de progresso e calcula automaticamente:
+
+```csharp
+// Percentual arrecadado (máximo 100%)
+public decimal PercentualArrecadado =>
+    MetaFinanceira > 0
+        ? Math.Min(Math.Round(ValorArrecadado / MetaFinanceira * 100, 1), 100)
+        : 0;
+
+// Dias restantes até o fim da campanha
+public int DiasRestantes =>
+    DateTime.TryParse(DataFim, out var fim)
+        ? Math.Max((int)(fim - DateTime.UtcNow).TotalDays, 0)
+        : 0;
+```
+
+---
+
+### Configuração
+
+#### GatewayUrl
+
+O frontend se conecta exclusivamente ao API Gateway — nunca aos microsserviços diretamente. A URL é configurada via `appsettings.json` injetado no build:
+
+```json
+{
+  "GatewayUrl": "${GATEWAY_URL}"
+}
+```
+
+A variável `${GATEWAY_URL}` é substituída pelo `entrypoint.sh` em tempo de execução do container:
+
+```bash
+# entrypoint.sh — substitui a variável no arquivo antes de iniciar o Nginx
+sed -i "s|\${GATEWAY_URL}|${GATEWAY_URL}|g" /usr/share/nginx/html/appsettings.json
+```
+
+#### docker-compose (LOCAL)
+
+```yaml
+cs.frontend:
+  environment:
+    GATEWAY_URL: "http://localhost:5000"  # URL do gateway YARP local
+```
+
+#### Kubernetes (AWS)
+
+```yaml
+env:
+  - name: GATEWAY_URL
+    value: "https://api.conexaosolidaria.com.br"  # URL do AWS API Gateway
+```
+
+---
+
+## Benefícios
+
+- 🌐 **SPA em C#** — toda a lógica do frontend em C#, sem trocar de linguagem em relação ao backend, facilitando o compartilhamento de modelos e convenções
+
+- 🔒 **Autenticação stateless** — JWT no localStorage com verificação de expiração automática, sem cookies, sem sessão de servidor
+
+- 🎨 **MudBlazor** — biblioteca de componentes Material Design completa, com grid responsivo, formulários, tabelas, dialogs e progress bars prontos
+
+- 🔑 **Autorização por perfil** — `[Authorize(Roles = "GESTOR_ONG")]` protege rotas administrativas diretamente na declaração da página, sem lógica adicional
+
+- ⚡ **Rota pública de campanhas** — a landing page carrega campanhas ativas sem exigir login, melhorando a conversão de novos doadores
+
+- 🏗️ **Gateway único** — o frontend conhece apenas a URL do gateway, sem hardcode de endpoints de microsserviços — mudanças de infraestrutura são transparentes
+
+- 📦 **Deploy simples** — build gera arquivos estáticos servidos pelo Nginx; sem processo Node.js, sem SSR, sem servidor de aplicação
+
+- 🔧 **Configuração em runtime** — `GatewayUrl` injetada pelo `entrypoint.sh` permite usar a mesma imagem Docker em qualquer ambiente apenas mudando a variável de ambiente
+
 
 
 ---
