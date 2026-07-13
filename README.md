@@ -2534,22 +2534,249 @@ env:
 
 - 🔧 **Configuração em runtime** — `GatewayUrl` injetada pelo `entrypoint.sh` permite usar a mesma imagem Docker em qualquer ambiente apenas mudando a variável de ambiente
 
-
-
 ---
 
-### Observabilidade com Grafana - Inserir em grafana
+## Observabilidade
 
-Os logs estruturados são visualizados em tempo real no **Grafana**, com dashboards dedicados para:
+A plataforma utiliza três ferramentas complementares de observabilidade, todas provisionadas via Kubernetes e com dashboards pré-configurados no Grafana, cobrindo métricas de negócio, métricas de infraestrutura, logs-traces e auditoria.
 
-- **Audit Log** (`cs-audit-log`) — todas as operações de criação, alteração e exclusão de entidades, com diff de campos modificados
-- **Application Logs** (`cs-app-log`) — logs de aplicação com filtros por nível, caller e **pesquisa por CorrelationId** para rastrear traces completos
-
-O campo `Properties` em JSON permite ao Grafana parsear e filtrar por qualquer propriedade nomeada:
-
-```logql
-{app="cs-app-logs"} | json | email = "user@test.com"
-{app="cs-app-logs", level="Error"} | json | caller =~ "Auth.*"
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        GRAFANA                              │
+│   Prometheus  │  Zabbix  │  DynamoDB-PG Proxy              │
+└───────┬───────┴─────┬────┴──────────┬──────────────────────┘
+        │             │               │
+   Métricas      Infraestrutura   Logs / Auditoria
+   de negócio    do servidor      (DynamoDB)
+   (.NET/HTTP)   (CPU/RAM/Disco)
+        │
+   /metrics (prometheus-net)
+   ├─ cs-usuarios-api
+   ├─ cs-campanhas-api
+   └─ cs-donationworker
 ```
 
 ---
+
+### 1. Prometheus — Métricas de Aplicação
+
+**Imagem:** `prom/prometheus:v2.53.0`  
+**Retenção:** 15 dias  
+**Porta:** 9090
+
+#### Scrape targets
+
+| Job | Target | Intervalo |
+|---|---|---|
+| `usuarios-api` | `cs-usuarios-api-svc:5001/metrics` | 10s |
+| `campanhas-api` | `cs-campanhas-api-svc:5002/metrics` | 10s |
+| `donationworker` | `cs-donationworker-api-svc:5003/metrics` | 10s |
+| `prometheus` | `cs-prometheus-svc:9090` | 15s |
+
+#### Métricas customizadas — prometheus-net
+
+Cada microsserviço implementa `IMetricsService` com métricas específicas de negócio expostas em `/metrics`:
+
+**Usuários API**
+
+| Métrica | Tipo | Descrição |
+|---|---|---|
+| `usuarios_login_total` | Counter | Logins realizados com sucesso |
+| `usuarios_logout_total` | Counter | Logouts realizados |
+| `usuarios_criados_total` | Counter | Novos usuários cadastrados |
+| `usuarios_removidos_total` | Counter | Usuários removidos (LGPD) |
+| `http_request_duration_seconds` | Histogram | Latência HTTP por método, rota e status code |
+
+**Campanhas API**
+
+| Métrica | Tipo | Descrição |
+|---|---|---|
+| `campanhas_criadas_total` | Counter | Campanhas criadas |
+| `campahas_concluidas_total` | Counter | Campanhas concluídas |
+| `campanhas_canceladas_total` | Counter | Campanhas canceladas |
+| `campanha_intencoes_total` | Counter | Intenções de doação registradas |
+| `http_request_duration_seconds` | Histogram | Latência HTTP |
+
+**Worker de Doações**
+
+| Métrica | Tipo | Descrição |
+|---|---|---|
+| `donation_worker_doacoes_total` | Counter | Doações processadas com sucesso |
+| `donation_worker_processing_duration_seconds` | Histogram | Tempo de processamento por tipo de evento |
+
+#### Histograma de latência
+
+Buckets calibrados para APIs REST:
+
+```
+0.005s | 0.01s | 0.025s | 0.05s | 0.075s | 0.1s | 0.25s | 0.5s | 0.75s | 1.0s | 2.5s | 5.0s
+```
+
+Labels: `method`, `route`, `status_code` — permite filtrar por rota específica no Grafana.
+
+---
+
+### 2. Grafana — Dashboards
+
+**Imagem:** `grafana/grafana:11.1.0`  
+**Porta:** 3000  
+**Plugin:** `alexanderzobnin-zabbix-app 4.4.5`
+
+Todos os dashboards são provisionados automaticamente via ConfigMap no Kubernetes — sem configuração manual após o deploy.
+
+#### Datasources configurados
+
+| Datasource | Tipo | URL | Uso |
+|---|---|---|---|
+| `Prometheus` | prometheus | `cs-prometheus-svc:9090` | Métricas de aplicação e runtime |
+| `Zabbix` | alexanderzobnin-zabbix-datasource | `cs-zabbix-svc/api_jsonrpc.php` | Infraestrutura do servidor |
+| `DynamoDB-PG` | postgres | `cs-dynamo-pg-proxy-svc:5450` | Logs e auditoria do DynamoDB |
+
+#### Dashboards disponíveis
+
+**ConexaoSolidaria — Usuarios API**
+
+| Painel | Métrica |
+|---|---|
+| CPU — Uso do Processo | `process_cpu_seconds_total` |
+| Memória — Heap .NET | `dotnet_total_memory_bytes` |
+| Handles Abertos | `process_open_handles` |
+| Requisições HTTP/s | `http_request_duration_seconds_count` |
+| Logins por Minuto | `usuarios_login_total` |
+| Logouts por Minuto | `usuarios_logout_total` |
+| Novos Usuários (acumulado) | `usuarios_criados_total` |
+| Usuários Removidos (acumulado) | `usuarios_removidos_total` |
+| Latência p90 / p95 / p99 | `http_request_duration_seconds` |
+| Latência Média por Rota | `http_request_duration_seconds` (label `route`) |
+| Threads em Uso | `dotnet_threadpool_threads_total` |
+| GC Collections | `dotnet_collection_count_total` |
+
+**ConexaoSolidaria — Campanhas API**
+
+| Painel | Métrica |
+|---|---|
+| CPU / Memória / Handles | Runtime .NET |
+| Requisições HTTP/s | `http_request_duration_seconds_count` |
+| Campanhas Criadas | `campanhas_criadas_total` |
+| Campanhas Concluídas | `campahas_concluidas_total` |
+| Campanhas Canceladas | `campanhas_canceladas_total` |
+| Intenções de Doação | `campanha_intencoes_total` |
+| Latência p90 / p95 / p99 | Histograma HTTP |
+| Threads / GC | Runtime .NET |
+
+**ConexaoSolidaria — Worker Doacoes**
+
+| Painel | Métrica |
+|---|---|
+| CPU / Memória / Handles | Runtime .NET |
+| Mensagens Processadas/s | `donation_worker_processing_duration_seconds_count` |
+| Doações (acumulado) | `donation_worker_doacoes_total` |
+| Latência de Processamento p90/p95/p99 | `donation_worker_processing_duration_seconds` |
+| Latência Média por Evento | label `event_type` |
+| Threads / GC | Runtime .NET |
+
+**Application Logs — Traces** ← via DynamoDB-PG Proxy (`cs-app-logs`)
+
+O dashboard de Application Logs funciona como um **sistema de tracing distribuído** — o `CorrelationId` percorre toda a cadeia de processamento de uma requisição e permite reconstruir o trace completo atravessando múltiplos microsserviços:
+
+| Painel | Descrição |
+|---|---|
+| Total de Logs | Contador geral |
+| Information | Contagem por nível |
+| Warning | Contagem por nível |
+| Error | Contagem por nível — alerta visual em vermelho |
+| Logs — Trace Completo | Tabela filtrada por `level`, `caller` e `correlationId`, ordenada cronologicamente |
+| Logs por Caller | Bar chart — volume por classe/microsserviço |
+| Logs por Level | Bar chart — distribuição Information / Warning / Error |
+
+**Uso como trace:** basta colar um `x-correlation-id` retornado no header de qualquer resposta HTTP no filtro `Correlation ID (Trace)` e o dashboard exibe toda a sequência de logs daquela requisição em ordem cronológica:
+
+```
+CorrelationId: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+
+Timestamp              Level        Caller                        Message
+2026-06-25T14:00:01Z  Information  LogarUsuarioCommandHandler    Tentativa de login iniciada
+2026-06-25T14:00:01Z  Information  LogarUsuarioCommandHandler    Usuario logado com sucesso
+2026-06-25T14:00:05Z  Information  CriarDoacaoCommandHandler     Iniciando criacao de doacao
+2026-06-25T14:00:05Z  EVENT        MessageService                DonationCreatedEvent publicado
+2026-06-25T14:00:06Z  EVENT        DonationCreatedEventConsumer  Evento recebido
+2026-06-25T14:00:06Z  EVENT        DonationCreatedEventConsumer  Doacao persistida com sucesso
+```
+
+**Audit Log — DynamoDB** ← via DynamoDB-PG Proxy (`cs-audit-log`)
+
+Visualização da trilha de auditoria de todas as operações no banco de dados PostgreSQL, capturadas automaticamente pelo `AuditInterceptor`:
+
+| Painel | Descrição |
+|---|---|
+| Total de Registros | Contador geral de operações auditadas |
+| ADDED | Contagem de inserções — azul |
+| MODIFIED | Contagem de alterações — laranja |
+| DELETED | Contagem de deleções — vermelho |
+| Audit Log | Tabela com `timestamp`, `service`, `operation`, `changed_by`, `resource_id`, `ip_address` — filtrável por serviço e operação |
+| Eventos por Serviço | Bar chart — volume por microsserviço |
+| Eventos por Operação | Bar chart — distribuição ADDED / MODIFIED / DELETED |
+
+**Zabbix Server Health** ← via Zabbix datasource
+
+CPU, memória, disponibilidade do agente, swap, uptime e tráfego de rede do servidor.
+
+---
+
+### 3. Zabbix — Monitoramento de Infraestrutura
+
+**Imagem:** `zabbix/zabbix-appliance:alpine-latest`  
+**Porta:** 80 (UI) / 10051 (trapper)  
+**Agente:** `zabbix/zabbix-agent:alpine-latest`
+
+Monitora métricas de infraestrutura do servidor onde o Kubernetes está rodando:
+
+- Utilização de CPU e Load Average
+- Utilização de memória RAM e swap
+- Espaço em disco
+- Tráfego de rede
+- Uptime do sistema
+- Disponibilidade do agente Zabbix
+
+Um **Job Kubernetes** (`cs-zabbix-init`) configura automaticamente o host e o dashboard via API JSON-RPC do Zabbix na primeira inicialização — sem configuração manual.
+
+O dashboard do Zabbix é integrado ao Grafana via plugin `alexanderzobnin-zabbix-app`, centralizando toda a observabilidade em uma única interface.
+
+---
+
+### Arquitetura no Kubernetes
+
+```
+ConfigMap cs-observability-config
+  ├─ prometheus.yml         → configuração do Prometheus
+  ├─ grafana_datasource_prometheus.yml → datasources (Prometheus, Zabbix, DynamoDB-PG)
+  └─ dashboards.yml         → provider de dashboards
+
+ConfigMaps de dashboards (um por dashboard)
+  ├─ cs-grafana-user-dash
+  ├─ cs-grafana-campaign-dash
+  ├─ cs-grafana-donation-dash
+  ├─ cs-grafana-zabbix-dash
+  ├─ cs-grafana-app-logs-dash
+  └─ cs-grafana-audit-log-dash
+```
+
+Todos os ConfigMaps são montados como volumes no pod do Grafana — os dashboards ficam disponíveis automaticamente sem nenhuma importação manual.
+
+---
+
+### Benefícios
+
+- 📈 **Métricas de negócio + infraestrutura** — além das métricas técnicas (CPU, memória, latência), o sistema rastreia eventos de negócio como logins, campanhas criadas e doações processadas — permitindo correlacionar comportamento do sistema com comportamento do usuário
+
+- 🔍 **Rastreamento por Correlation ID** — o dashboard de Application Logs permite colar um `x-correlation-id` e ver todos os logs daquela requisição em ordem cronológica, atravessando múltiplos microsserviços
+
+- 🏗️ **Provisionamento automático** — dashboards, datasources e configurações são provisionados via ConfigMap no Kubernetes — zero configuração manual após o deploy
+
+- ⏱️ **Percentis de latência** — histogramas com p90, p95 e p99 por rota identificam gargalos específicos, indo além da média que pode mascarar outliers
+
+- 🔄 **Retenção configurável** — Prometheus retém 15 dias de métricas com `--storage.tsdb.retention.time=15d` e suporte a reload via `--web.enable-lifecycle`
+
+- 🌐 **Observabilidade unificada** — Grafana centraliza três fontes distintas (Prometheus, Zabbix, DynamoDB) em uma única interface, sem precisar alternar entre ferramentas
+
+- 💰 **DynamoDB-PG Proxy** — elimina o custo do plugin pago do Grafana para DynamoDB, usando o datasource PostgreSQL nativo para consultar logs e auditoria
