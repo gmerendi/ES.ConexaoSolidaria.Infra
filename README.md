@@ -1366,7 +1366,203 @@ AWS    → IAmazonSQS.SendMessageAsync() → Amazon SQS (JSON raw)
 
 ---
 
-## Sistema de notificaçao
+## Sistema de notificaçoes
+
+O sistema de notificações foi criado para consumir eventos do broker de mensagens e enviar e-mails aos usuários de forma assíncrona e desacoplada. Nenhum microsserviço envia e-mail diretamente — toda comunicação por e-mail passa por um worker (local) ou pelo SNS (AWS)
+
+```
+Microsserviço Usuários
+  └─ publica UserCreatedEvent
+       └─ Worker Notificações → envia e-mail de boas-vindas
+
+Worker Doações
+  └─ publica DonationProcessedEvent
+       └─ Worker Notificações → envia e-mail de confirmação de doação
+```
+
+---
+
+## Eventos Consumidos
+
+**Arquivo:** `Domain/Events/DomainEvents.cs`
+
+| Evento | Fila | E-mail enviado |
+|---|---|---|
+| `UserCreatedEvent` | `user-created-queue` | Boas-vindas ao novo usuário |
+| `DonationProcessedEvent` | `donation-processed-queue` | Confirmação de doação processada |
+
+### Estrutura dos eventos
+
+```csharp
+// Novo usuário cadastrado
+record UserCreatedEvent(
+    Guid guidUsuario,
+    string nomeCompleto,
+    string email,
+    string cpf,           // ← encriptado AES-256
+    string? correlationId);
+
+// Doação persistida e campanha atualizada com sucesso
+record DonationProcessedEvent(
+    Guid guidUser,
+    string nome,
+    string email,
+    Guid guidCampanha,
+    string tituloCampanha,
+    decimal valor,
+    string? correlationId);
+```
+
+---
+
+## Consumers (local)
+
+### UserCreatedEventConsumer
+
+**Arquivo:** `Consumers/UserCreatedEventConsumer.cs`
+
+Disparado quando um novo usuário se cadastra na plataforma. Envia um e-mail de boas-vindas com o CPF do usuário para confirmação do cadastro.
+
+```
+UserCreatedEvent recebido
+  └─ EmailService.SendUserCreatedEmailAsync(nome, email, cpf)
+       └─ E-mail HTML com boas-vindas e link para o site
+```
+
+### DonationProcessedEventConsumer
+
+**Arquivo:** `Consumers/DonationProcessedEventConsumer.cs`
+
+Disparado pelo Worker de Doações após persistir a doação e atualizar o valor arrecadado da campanha. Envia a confirmação da doação ao doador.
+
+```
+DonationProcessedEvent recebido
+  └─ EmailService.SendDonationProcessedEmailAsync(nome, email, tituloCampanha, valor)
+       └─ E-mail HTML com campanha, valor e data da doação
+```
+
+---
+
+## Transporte por Ambiente
+
+| Ambiente | Broker | Serviço de E-mail |
+|---|---|---|
+| `LOCAL` | RabbitMQ | Mailpit (SMTP local — captura e-mails sem enviar) |
+| `CLOUD` | Amazon SQS | Lambda + Mailtrap API (e-mails reais em sandbox) |
+
+---
+
+## Configuração LOCAL — RabbitMQ + Mailpit
+
+**Arquivo:** `Infrastructure/Extensions/MessagingExtensions.cs`
+
+O **Mailpit** captura todos os e-mails enviados e os exibe em uma interface web em `http://localhost:8025` — sem enviar nada de verdade. Ideal para desenvolvimento e testes.
+
+### Política de Retry — RabbitMQ
+
+Dois níveis de retry garantem que falhas transitórias não perdem mensagens:
+
+```
+Nível 1 — MassTransit:
+  Intervalos: 1s → 5s → 30s
+
+Nível 2 — Por fila:
+  3 tentativas a cada 5 segundos
+```
+
+Se todas as tentativas falharem, a mensagem vai para a fila `_error` do RabbitMQ para análise manual.
+
+---
+
+## Configuração AWS — SQS + Lambda + SNS + Mailtrap
+
+Em produção, o worker de notificações é substituído por uma **AWS Lambda Python** que consome diretamente do SQS e usa a **API do Mailtrap** para envio de e-mails.
+
+### Filas SQS
+
+| Fila | Propósito | Retenção | Visibility Timeout | Dead Letter |
+|---|---|---|---|---|
+| `user-created-queue` | Boas-vindas ao usuário | 1 dia | 60s | `user-created-dlq` |
+| `donation-processed-queue` | Confirmação de doação | Padrão SQS | 60s | `donation-processed-dlq` |
+
+Cada fila tem uma **Dead Letter Queue (DLQ)** — após `maxReceiveCount: 3` falhas, a mensagem é movida para a DLQ para investigação sem ser perdida.
+
+### Lambda de E-mail
+
+**Runtime:** Python 3.9  
+**Handler:** `email_sending.handler`  
+**Timeout:** 30 segundos
+
+```
+SQS Event Source Mapping
+  ├─ user-created-queue         → Lambda email_lambda (batch: 5)
+  └─ donation-processed-queue   → Lambda email_lambda (batch: 5)
+```
+
+O `batch_size: 5` processa até 5 mensagens por invocação — balanceando throughput e custo.
+
+O `ReportBatchItemFailures` permite que a Lambda reporte falhas parciais — se 3 de 5 mensagens falharem, apenas as 3 voltam para a fila, sem reprocessar as 2 que já foram enviadas com sucesso.
+
+### SNS para notificações operacionais
+
+Um tópico SNS `email-notifications` permite que a Lambda publique os e-mails para um e-mail cadastrado para testes no ambiente AWS LAB. Essa foi a maneira encontrada para enviar os e-mails pois o serviço SES (Simple Email Service) não é disponível utilizando o LabRole.
+
+```
+Lambda → SNS topic (email-notifications) → e-mail do usuario (configuravel no terraform).
+```
+
+### Variáveis de ambiente da Lambda - terraform
+
+| Variável | Descrição |
+|---|---|
+| `SENDER_EMAIL` | E-mail remetente (`noreply@projeto.com`) |
+| `SENDER_NAME` | Nome do remetente |
+| `MAILTRAP_API_TOKEN` | Token de autenticação do Mailtrap |
+| `MAILTRAP_INBOX_ID` | ID da caixa de entrada do Mailtrap |
+| `SNS_TOPIC_ARN` | ARN do tópico SNS para notificações operacionais |
+
+---
+
+## Fluxo Completo por Evento
+
+### Novo usuário cadastrado
+
+```
+1. Usuário se cadastra via POST /api/v1/usuario
+2. Microsserviço Usuários publica UserCreatedEvent no broker
+3. [LOCAL]  RabbitMQ → UserCreatedEventConsumer → MailKit → Mailpit
+   [AWS]    SQS → Lambda → Mailtrap API → e-mail real
+4. Usuário recebe e-mail de boas-vindas com confirmação do CPF
+```
+
+### Doação processada
+
+```
+1. Usuário registra doação via POST /api/v1/Doacoes
+2. Microsserviço Campanhas publica DonationCreatedEvent
+3. Worker Doações consome, persiste e publica DonationProcessedEvent
+4. [LOCAL]  RabbitMQ → DonationProcessedEventConsumer → MailKit → Mailpit
+   [AWS]    SQS → Lambda → Mailtrap API → e-mail real
+5. Doador recebe e-mail de confirmação com campanha, valor e data
+```
+
+---
+
+## Benefícios
+
+- 📨 **Desacoplamento total** — microsserviços publicam eventos e esquecem; o worker cuida de quando e como o e-mail é enviado
+
+- 🔄 **Retry automático** — falhas de SMTP ou rede são retentadas automaticamente sem intervenção manual, em dois níveis (MassTransit + fila)
+
+- 💀 **Dead Letter Queue** — mensagens que falham repetidamente não são perdidas — ficam na DLQ para investigação e reprocessamento manual
+
+- 🧪 **Ambiente local seguro** — Mailpit captura todos os e-mails sem enviar nada de verdade, permitindo testar fluxos completos sem risco de spam
+
+- ⚡ **Processamento em batch** — Lambda processa até 5 mensagens por invocação com `ReportBatchItemFailures`, evitando reprocessamento desnecessário em falhas parciais
+
+- 🏗️ **Infraestrutura como código** — todas as filas SQS, DLQs, Lambda e SNS são provisionados via Terraform, garantindo reproducibilidade entre ambientes
+
+- 🔀 **Multi-ambiente** — RabbitMQ local e SQS em produção, sem alterar o código dos consumers — apenas configuração muda
 
 ---
 
