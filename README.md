@@ -3036,4 +3036,4 @@ Todos os ConfigMaps são montados como volumes no pod do Grafana — os dashboar
 - [Matriz de Rastreabilidade](./docs/traceability-matrix/)
 - [Glossário de Domínio](./docs/GlossarioDominio.md)
 - [LGPD Compliance](./docs/Lgpd.md/)
-- [Contratos de API](./docs/api-contracts/)
+- [Comandos de Teste](./docs/ComandosTesteApi.md)
