@@ -2751,6 +2751,14 @@ Visualização da trilha de auditoria de todas as operações no banco de dados 
 
 CPU, memória, disponibilidade do agente, swap, uptime e tráfego de rede do servidor.
 
+#### Alertas
+Configurados os seguintes alertas na observabilidade:
+- Memory exceeding 80%
+- CPU exceeding 50%
+- Disk exceeding 50%
+- Doacoes acima de 3
+
+
 ---
 
 ### 3. Zabbix — Monitoramento de Infraestrutura
