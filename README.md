@@ -441,19 +441,21 @@ A busca utiliza `Fuzziness: AUTO`, que ajusta automaticamente a tolerância com 
 
 ### Benefícios
 
-- **Velocidade** — respostas em milissegundos, independente do volume de campanhas cadastradas, sem impacto no banco de dados principal
+### Benefícios
 
-- **Tolerância a erros de digitação** — o usuário pode errar a escrita e ainda encontrar a campanha correta, reduzindo a fricção na experiência de busca
+- ⚡ **Velocidade** — respostas em milissegundos, independente do volume de campanhas cadastradas, sem impacto no banco de dados principal
 
-- **Busca em tempo real** — resultados aparecem enquanto o usuário digita, sem necessidade de pressionar "buscar"
+- 🔤 **Tolerância a erros de digitação** — o usuário pode errar a escrita e ainda encontrar a campanha correta, reduzindo a fricção na experiência de busca
 
-- **Relevância inteligente** — campanhas com o termo buscado no título aparecem antes das que têm o termo apenas na descrição, entregando os resultados mais relevantes primeiro
+- 🔄 **Busca em tempo real** — resultados aparecem enquanto o usuário digita, sem necessidade de pressionar "buscar"
 
-- **Escalabilidade** — o Elasticsearch escala horizontalmente, suportando crescimento no volume de campanhas e de usuários simultâneos sem degradação de performance
+- 🎯 **Relevância inteligente** — campanhas com o termo buscado no título aparecem antes das que têm o termo apenas na descrição, entregando os resultados mais relevantes primeiro
 
-- **Desacoplamento** — a busca não concorre com as operações transacionais do banco de dados PostgreSQL, garantindo que buscas intensas não impactem o cadastro de campanhas e doações
+- 📈 **Escalabilidade** — o Elasticsearch escala horizontalmente, suportando crescimento no volume de campanhas e de usuários simultâneos sem degradação de performance
 
-- **Índice sempre atualizado** — qualquer alteração em uma campanha é refletida automaticamente no índice, garantindo que os resultados de busca estejam sempre sincronizados com o estado real do sistema
+- 🔀 **Desacoplamento** — a busca não concorre com as operações transacionais do banco de dados PostgreSQL, garantindo que buscas intensas não impactem o cadastro de campanhas e doações
+
+- 🔁 **Índice sempre atualizado** — qualquer alteração em uma campanha é refletida automaticamente no índice, garantindo que os resultados de busca estejam sempre sincronizados com o estado real do sistema
 
 ---
 
