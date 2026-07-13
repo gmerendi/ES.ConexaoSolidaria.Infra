@@ -76,6 +76,7 @@ O sistema possui os seguintes features implementados: <br>
 - [Sistema de Gerenciamento de Erros](#sistema-de-gerenciamento-de-erros)
 - [Sistema de Audit Log](#sistema-de-audit-log)
 - [Sistema de Autenticaçao](#sistema-de-autenticaçao)
+- [Sistema de Mensageria](#sistema-de-mensageria)
 ---
 
 
@@ -1113,7 +1114,251 @@ AES__KEY: "W36tuZgAwZTkvGebRMEQJjGtbLNJRK6unGj1Ow5Rnm8="  # base64 de 32 bytes
 
 - ⚡ **Cache de sessão** — dados do usuário cacheados no Redis por 30 minutos reduzem consultas ao banco em endpoints autenticados
 
-- ---
+---
+
+## Sistema de Mensageria — Conexão Solidária
+
+A plataforma utiliza sistema de mensageria assíncrona para desacoplar os microsserviços e garantir que operações críticas, baseado em **RabbitMQ** e **MassTransit** para o ambiente local, e **Amazon SQS** para os ambientes LAB e produção.
+
+O sistema garante que operações críticas — como o processamento de doações — sejam executadas de forma confiável, mesmo em cenários de falha parcial.
+
+```
+Microsserviço Campanhas
+  └─ Usuário registra intenção de doação
+       └─ Publica DonationCreatedEvent
+            └─ RabbitMQ / SQS
+                 └─ Worker Doações consome
+                      ├─ Persiste doação no banco
+                      ├─ Atualiza valor arrecadado da campanha (UPDATE atômico)
+                      └─ Publica DonationProcessedEvent
+```
+
+---
+
+### Eventos
+
+**Arquivo:** `Domain/Events/DomainEvents.cs` (compartilhado entre microsserviços)
+
+| Evento | Publicado por | Consumido por | Descrição |
+|---|---|---|---|
+| `DonationCreatedEvent` | Microsserviço Campanhas | Worker Doações | Intenção de doação registrada pelo usuário |
+| `DonationProcessedEvent` | Worker Doações | Worker Notificações | Doação persistida e campanha atualizada com sucesso |
+| `UserCreatedEvent` | Microsserviço Usuários | Worker Notificações | Novo usuário cadastrado na plataforma |
+
+#### Estrutura dos eventos
+
+```csharp
+// Publicado quando o usuário registra uma intenção de doação
+record DonationCreatedEvent(
+    Guid guidUser,
+    string nome,
+    string email,
+    Guid guidCampanha,
+    string tituloCampanha,
+    string cpf,           // ← CPF encriptado com AES-256
+    decimal valor,
+    string? correlationId);
+
+// Publicado pelo worker após persistir a doação com sucesso
+record DonationProcessedEvent(
+    Guid guidUser,
+    string nome,
+    string email,
+    Guid guidCampanha,
+    string tituloCampanha,
+    decimal valor,
+    string? correlationId);
+
+// Publicado quando um novo usuário é cadastrado
+record UserCreatedEvent(
+    Guid guidUsuario,
+    string nomeCompleto,
+    string email,
+    string cpf,           // ← CPF encriptado com AES-256
+    string? correlationId);
+```
+
+> **Segurança:** o CPF nunca trafega em texto plano nos eventos. É encriptado com **AES-256** antes da publicação e decriptado pelo consumer usando a mesma chave compartilhada via Kubernetes Secret.
+
+---
+
+#### Transporte por Ambiente
+
+O sistema usa transportes diferentes conforme o ambiente, sem alterar nenhuma linha de código de negócio — apenas a configuração muda:
+
+| Ambiente | Transporte | Configuração |
+|---|---|---|
+| `LOCAL` | RabbitMQ | Container Docker via docker-compose |
+| `CLOUD` | Amazon SQS | AWS com credenciais temporárias (Session Token) |
+
+---
+
+### MassTransit
+
+**Framework:** [MassTransit 8](https://masstransit.io) — abstrai o transporte subjacente (RabbitMQ ou SQS) e fornece retry, outbox, scheduling e consumer pipeline.
+
+#### Configuração LOCAL — RabbitMQ
+
+```
+RabbitMQ
+  ├─ Host: cs-rabbitmq:5672
+  ├─ VHost: /
+  ├─ Management UI: localhost:15672
+  ├─ InMemoryOutbox habilitado
+  └─ Retry: 1s → 5s → 30s
+```
+
+**InMemoryOutbox** garante que mensagens publicadas durante o processamento de um consumer só são enviadas ao broker após o handler completar com sucesso — evitando publicação de eventos para transações que falharam.
+
+#### Configuração LAB/AWS — Amazon SQS
+
+```
+Amazon SQS
+  ├─ Região: us-east-1
+  ├─ Serialização: Raw JSON (compatível com payloads enviados fora do MassTransit)
+  ├─ Retry: 1s → 5s → 30s (+ 3 tentativas a cada 5s na fila)
+  ├─ DiscardFaultedMessages: true  ← não cria fila _error automática
+  └─ DiscardSkippedMessages: true
+```
+
+---
+
+### Worker Doações — Consumer
+
+**Arquivo:** `DonationWorker/Consumers/DonationCreatedEventConsumer.cs`
+
+O consumer processa cada `DonationCreatedEvent` em **5 etapas ordenadas**, com rollback automático em caso de falha em qualquer etapa transacional:
+
+```
+1. Verifica se a campanha existe
+     └─ ApplicationException se não encontrada → MassTransit retry
+
+2. Valida se o valor é > 0
+     └─ ApplicationException se inválido → MassTransit retry
+
+3. Verifica idempotência pelo CorrelationId
+     └─ ApplicationException se já processado → MassTransit retry
+     └─ Garante que retries do broker não gerem doações duplicadas
+
+4. Transação atômica no PostgreSQL
+     ├─ BeginTransactionAsync()
+     ├─ INSERT na tabela doacoes
+     ├─ UPDATE campanhas SET valor_arrecadado = valor_arrecadado + @valor (atômico)
+     ├─ CommitAsync() → sucesso
+     └─ RollbackAsync() → qualquer falha
+
+5. Publica DonationProcessedEvent
+     └─ Apenas após commit bem-sucedido
+     └─ Lança exceção se falhar → MassTransit retry (banco já commitado, idempotência garante não duplicar)
+```
+
+#### Métricas registradas
+
+```csharp
+_metrics.IncrementarDoacao();
+_metrics.RegistrarDuracaoProcessamentoMensagem(nameof(DonationCreatedEvent), sucesso, elapsed);
+```
+
+O consumer registra métricas de negócio e performance via Prometheus a cada mensagem processada, incluindo tempo de processamento e flag de sucesso/falha.
+
+---
+
+### Idempotência
+
+O consumer verifica o `CorrelationId` antes de processar qualquer mensagem. Se uma doação com o mesmo `CorrelationId` já existe no banco, a mensagem é descartada:
+
+```
+Cenário: Worker processa, commita no banco, cai antes de enviar ACK ao broker
+  └─ RabbitMQ/SQS reenvia a mensagem
+  └─ Consumer verifica: ObterPorCorrelationIdAsync(correlationId)
+       └─ Doação já existe → lança ApplicationException → MassTransit descarta
+       └─ Doação não existe → processa normalmente
+```
+
+O `CorrelationId` é gerado no microsserviço de Campanhas e incluído no evento — é o mesmo `x-correlation-id` da requisição HTTP original, garantindo rastreabilidade de ponta a ponta.
+
+---
+
+### Política de Retry
+
+Configurada em dois níveis:
+
+#### Nível 1 — MassTransit (transporte)
+
+```csharp
+cfg.UseMessageRetry(r => r.Intervals(
+    TimeSpan.FromSeconds(1),   // 1ª tentativa após 1s
+    TimeSpan.FromSeconds(5),   // 2ª tentativa após 5s
+    TimeSpan.FromSeconds(30)   // 3ª tentativa após 30s
+));
+```
+
+#### Nível 2 — Fila SQS (ambiente Cloud)
+
+```csharp
+e.UseMessageRetry(r => r.Interval(3, TimeSpan.FromSeconds(5)));
+// 3 tentativas adicionais a cada 5s antes de ir para dead letter
+```
+
+Se todas as tentativas falharem, a mensagem vai para a **dead letter queue** do SQS ou para a fila `_error` do RabbitMQ para análise manual.
+
+---
+
+### Publicação de Eventos — IMessageService
+
+**Arquivo:** `Infrastructure/Services/Messaging/MessageService.cs`
+
+O `IMessageService` abstrai o transporte — o handler de aplicação chama sempre a mesma interface, sem saber se está publicando no RabbitMQ ou no SQS:
+
+```csharp
+// Campanhas publica a intenção de doação
+await _messageService.SendDonationCreatedEventMessage(
+    guidUser, nome, email, guidCampanha, tituloCampanha, cpfEncriptado, valor, ct);
+
+// Worker publica confirmação de processamento
+await _messageService.SendDonationProcessedEventMessage(
+    guidUser, nome, email, guidCampanha, tituloCampanha, valor, correlationId, ct);
+```
+
+Internamente:
+
+```
+LOCAL  → IPublishEndpoint.Publish() → RabbitMQ via MassTransit
+AWS    → IAmazonSQS.SendMessageAsync() → Amazon SQS (JSON raw)
+```
+
+---
+
+### Filas
+
+| Fila | Ambiente | Configuração | Finalidade |
+|---|---|---|---|
+| `user-created-queue` | LOCAL/AWS | Configurada via variável de ambiente `USER_CREATED_QUEUE` | Após a criação de um novo usuário, é consumida pelo microsserviço de notificações (local) ou SNS (AWS) e envia um e-mail para o usuário |
+| `donation-created-queue` | LOCAL/AWS | Configurada via variável de ambiente `DONATION_CREATED_QUEUE` | Após a criação da intenção de doação, é consumida pelo Worker de doações, que grava a doação em bando de dados e atualiza o valor arrecadado da campanha |
+| `donation-processed-queue` | LOCAL/AWS | Configurada via variável de ambiente `DONATION_PROCESSED_QUEUE` | É publicada após o processamento da doação e consumida pelo microsserviço de notificações (local) ou SNS (AWS) e envia um e-mail para o usuário |
+
+---
+
+## Benefícios
+
+- ⚡ **Desacoplamento total** — o microsserviço de Campanhas não conhece o Worker Doações, apenas publica um evento e segue — o processamento acontece de forma assíncrona e independente
+
+- 🔄 **Retry automático** — falhas transitórias (banco fora, rede instável) são retentadas automaticamente pelo MassTransit sem intervenção manual
+
+- 🛡️ **Idempotência** — o `CorrelationId` garante que retries do broker nunca gerem doações duplicadas, mesmo em cenários de falha após commit
+
+- 🔒 **Atomicidade** — o UPDATE do valor arrecadado da campanha é feito com SQL atômico (`SET valor = valor + @x`), seguro para múltiplos workers rodando em paralelo no Kubernetes sem race condition
+
+- 🌍 **Multi-ambiente** — RabbitMQ local para desenvolvimento, Amazon SQS em produção, sem alterar código de negócio — apenas variável de ambiente
+
+- 📊 **Observabilidade** — cada mensagem processada registra métricas de sucesso, falha e duração via Prometheus, permitindo monitoramento em tempo real no Grafana
+
+- 🔑 **CPF protegido** — dados sensíveis trafegam encriptados com AES-256 nos eventos, nunca em texto plano no broker
+
+- 🏗️ **Transação garantida** — INSERT de doação e UPDATE de campanha ocorrem na mesma transação PostgreSQL — ou os dois acontecem ou nenhum, sem estados inconsistentes
+
+
+---
 
 ### Observabilidade com Grafana - Inserir em grafana
 
