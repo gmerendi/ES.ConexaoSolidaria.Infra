@@ -74,7 +74,7 @@ O sistema possui os seguintes features implementados: <br>
 - [Sistema de Autenticaçao](#sistema-de-autenticaçao)
 - [Sistema de Mensageria](#sistema-de-mensageria)
 - [Sistema de Notificaçoes](#sistema-de-notificaçoes)
-- [Testes](#testes)
+- [Testes Unitarios](#testes-unitarios)
 - [CI/CD - Github Actions](#github-actions)
 - [Api Gateway](#api-gateway)
 - [Proxy PostGreSql - Dynamo](#proxy-postgresql-dynamo)
@@ -1561,6 +1561,99 @@ Lambda → SNS topic (email-notifications) → e-mail do usuario (configuravel n
 - 🏗️ **Infraestrutura como código** — todas as filas SQS, DLQs, Lambda e SNS são provisionados via Terraform, garantindo reproducibilidade entre ambientes
 
 - 🔀 **Multi-ambiente** — RabbitMQ local e SQS em produção, sem alterar o código dos consumers — apenas configuração muda
+
+---
+
+## Testes Unitarios
+
+A plataforma possui testes unitários em dois microsserviços — **Usuários** e **Worker de Doações** — totalizando **130 testes**.
+
+| Projeto | Testes | Arquivo de projeto |
+|---|---|---|
+| `Usuarios.Test` | 85 | `tests/Usuarios.Test` |
+| `Campanhas.Test` | 68 | `tests/Campanhas.Test` |
+| `DonationWorker.Tests` | 45 | `tests/DonationWorker.Tests` |
+| **Total** | **198** | |
+
+---
+
+### Stack de Testes
+
+| Pacote | Finalidade |
+|---|---|
+| **xUnit** | Framework de testes |
+| **Moq** | Mock de dependências (repositórios, serviços, cache) |
+| **FluentAssertions** | Assertions expressivas e legíveis |
+| **coverlet** | Coleta de cobertura de código |
+
+---
+
+### Microsserviço de Usuários — 85 testes
+
+#### Camada de Domínio
+
+| Arquivo | Testes | O que cobre |
+|---|---|---|
+| `UsuarioTests.cs` | 17 | Criação da entidade, validações de status, regras de negócio |
+| `UsuarioDomainServiceTest.cs` | 11 | Regras de quem pode remover, alterar e modificar perfil/status |
+| `PasswordTests.cs` | 11 | Hash BCrypt, validação de formato (maiúscula, número, especial) |
+| `CpfTests.cs` | 9 | Validação matemática, limpeza de formatação, anonimização |
+| `EmailTests.cs` | 6 | Formato de e-mail, casos de borda |
+
+#### Camada de Application
+
+| Arquivo | Testes | O que cobre |
+|---|---|---|
+| `GestaoUsuarioCommandHandlerTests.cs` | 10 | Alterar, suspender, ativar, alterar perfil |
+| `CriarUsuarioCommandHandlerTests.cs` | 7 | Cadastro, duplicidade de e-mail e CPF |
+| `LogarUsuarioCommandHandlerTests.cs` | 8 | Login, credenciais inválidas, usuário suspenso/removido |
+| `ResetarSenhaCommandHandlerTests.cs` | 6 | Troca de senha, verificação da senha atual, blacklist de token |
+
+---
+
+### Microsserviço de Campanhas — 68 testes
+
+#### Camada de Domínio
+
+| Arquivo | Testes | O que cobre |
+|---|---|---|
+| `CampanhaTests.cs` | 18 | Criação, AlterarCampanha, CancelarCampanha, ConcluirCampanha e transições de status |
+| `TituloCampanhaTests.cs` | 9 | Validação de tamanho mínimo/máximo, trim, conversão implícita |
+| `MetaFinanceiraTests.cs` | 5 | Valores positivos, zero e negativos, conversão implícita |
+
+#### Camada de Application
+
+| Arquivo | Testes | O que cobre |
+|---|---|---|
+| `GestaoCampanhasCommandHandlerTests.cs` | 27 | Criar, alterar, cancelar e concluir campanhas — permissões, duplicidade, campanha inexistente |
+| `CriarDoacaoCommandHandlerTest.cs` | 9 | Registro de intenção de doação, validações de valor e campanha ativa |
+
+---
+
+### Worker de Doações — 45 testes
+
+#### Camada de Domínio
+
+| Arquivo | Testes | O que cobre |
+|---|---|---|
+| `CampanhaTests.cs` | 19 | Criação, AlterarCampanha, CancelarCampanha, ConcluirCampanha |
+| `DoacaoTests.cs` | 9 | Criação da entidade, validações de valor, e-mail e CPF |
+
+#### Consumer
+
+| Arquivo | Testes | O que cobre |
+|---|---|---|
+| `DonationCreatedEventConsumerTests.cs` | 12 | Fluxo de sucesso, campanha inexistente, valor inválido, idempotência, rollback em falha, propagação do CancellationToken |
+
+---
+
+### Beneficios
+- 🛡️ Regras de negócio protegidas — validações críticas como CPF, senha, status de campanha e permissões de perfil são verificadas automaticamente, impedindo regressões silenciosas
+- 🔄 Refatoração segura — qualquer alteração no domínio ou nos handlers é imediatamente validada pelos testes, reduzindo o risco de quebrar comportamentos existentes
+- 📋 Documentação viva — os testes descrevem o comportamento esperado do sistema em linguagem próxima ao negócio (Deve_LancarExcecao_QuandoCampanhaJaCancelada)
+- 🎯 Isolamento via Moq — dependências externas (banco, cache, mensageria, ElasticSearch) são mockadas, garantindo que os testes sejam rápidos, determinísticos e independentes de infraestrutura
+- ✅ Cobertura das camadas críticas — domínio e application são as camadas de maior risco de negócio e são as mais cobertas, seguindo a pirâmide de testes
+- 🔁 Idempotência testada — o DonationCreatedEventConsumerTests verifica explicitamente que mensagens duplicadas do RabbitMQ não geram doações duplicadas — cenário crítico em ambiente Kubernetes com múltiplos pods
 
 ---
 
