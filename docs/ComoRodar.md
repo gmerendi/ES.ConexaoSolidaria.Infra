@@ -269,9 +269,6 @@ Siga os passos para criar uma api e anote o token e inbox ID.
 <img width="669" height="313" alt="image" src="https://github.com/user-attachments/assets/f536b0d9-bf73-42aa-bdc0-d33a8bd953d8" />
 
 
-#### 1.5) Modifique o arquivo k8s/aws/services/cs-configmap e modifique os dados do AWS:
-<img width="2544" height="793" alt="image" src="https://github.com/user-attachments/assets/c59912b9-613b-4606-a8ea-f5c85c0b2913" />
-
 ### 2.0 Laboratório AWS
 
 Para iniciar o Laboratório AWS, siga os seguintes passos abaixo:
@@ -359,17 +356,22 @@ O email inserido nesse campo será o e-mail utilizado para os testes de notifica
 <br>
 Acesse o e-mail configurado e verifique aceite a subscrição proveniente da AWS. Caso esse passo não seja feito, os e-mails de notificação não serão enviados.
 
+
+#### 3.6) Modifique o arquivo k8s/aws/services/cs-configmap e modifique os dados do AWS:
+<img width="2544" height="793" alt="image" src="https://github.com/user-attachments/assets/c59912b9-613b-4606-a8ea-f5c85c0b2913" />
+
+
 <br><br>
-#### 3.6) Fazer update de contexto do Kubernetes (EKS)
+#### 3.7) Fazer update de contexto do Kubernetes (EKS)
 ```powershell
 aws eks update-kubeconfig --region us-east-1 --name cs-cluster
 ```
 
-#### 3.7) Rode o Workflow de todos os repositorios de microservicos:
+#### 3.8) Rode o Workflow de todos os repositorios de microservicos:
 TODO
 <br><br>
 
-#### 3.8) Fazer deploy dos manifestos Kubernetes
+#### 3.9) Fazer deploy dos manifestos Kubernetes
 Abra um powershell na raiz e digite os comandos abaixo:
 ```powershell
 kubectl create configmap cs-grafana-user-dash --from-file=docker-compose/observability/grafana/provisioning/dashboards/usuarios-api.json
@@ -420,7 +422,7 @@ kubectl get pods
 <img width="533" height="163" alt="image" src="https://github.com/user-attachments/assets/9024b037-cfa4-4fcb-a4cc-85874b0c1148" />
 <br><br>
 
-#### 3.9) Insira os serviços dos microserviços no api gateway
+#### 3.10) Insira os serviços dos microserviços no api gateway
 Abra um powershell na raiz e digite os comandos abaixo:
 ```powershell
 kubectl get svc
@@ -442,7 +444,7 @@ O api gateway será criado.<br>
 <img width="696" height="305" alt="image" src="https://github.com/user-attachments/assets/d00a1fc8-01b1-4af7-93d3-b0ed5c2f6065" />
 <br><br>
 
-#### 3.10) Insira a URL do API Gateway no arquivo cs-configmap.yaml
+#### 3.11) Insira a URL do API Gateway no arquivo cs-configmap.yaml
 Para descobrir o endereço do API Gateway:<br>
 ```powershell
 $apiId = aws apigatewayv2 get-apis --query "Items[0].ApiId" --output text
@@ -457,7 +459,7 @@ Write-Host "Endpoint: $endpoint"
 
 Caso se deseje utilizar os micros-serviços diretamente do API Gateway, os comandos estão no arquivo [ComandosTesteApi.md]
 
-#### 3.11) Efetue o deploy do frontend
+#### 3.12) Efetue o deploy do frontend
 ```powershell
 kubectl apply -f k8s/aws/services/cs-configmap.yaml
 kubectl apply -f k8s/aws/services/cs-frontend.yaml
@@ -470,7 +472,7 @@ O Frontend pode ser utilizado na url: <cs-frontend-svc.EXTERNAL-IP>:3000<br>
 
 
 <br><br>
-#### 3.12) Efetue o deploy da Observabilidade
+#### 3.13) Efetue o deploy da Observabilidade
 ```powershell
 kubectl apply -f k8s/aws/services/cs-prometheus.yaml
 kubectl apply -f k8s/aws/services/cs-grafana.yaml
