@@ -755,6 +755,7 @@ services:
         target: /etc/grafana/provisioning/datasources/prometheus.yaml
     volumes:
       - ./observability/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./observability/grafana/provisioning/alerting:/etc/grafana/provisioning/alerting:ro
       - grafana_data:/var/lib/grafana
     networks:
       - csnetwork
