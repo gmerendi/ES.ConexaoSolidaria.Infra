@@ -266,6 +266,7 @@ Na página home, clique em E-mail API/SMTP.
 Siga os passos para criar uma api e anote o token e inbox ID.
 
 #### 1.4) Crie o arquivo terraform.tfvars a partir do arquivo terraform.tfvars.example
+Insira os dados de sua configuracao <br>
 <img width="669" height="313" alt="image" src="https://github.com/user-attachments/assets/f536b0d9-bf73-42aa-bdc0-d33a8bd953d8" />
 
 
