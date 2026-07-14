@@ -120,7 +120,7 @@ docker-compose build
 
 ```
 <br>
-4. Verifique os status dos pods com o comando abaixo.  Aguarde até que todos fiquem com status Running e Ready (1/1): <br>
+4. Verifique os status dos pods com o comando abaixo.  Aguarde até que todos fiquem com status Running e Ready (1/1), exceto o cs-zabbix-init, que ficará com status Completed: <br>
 
 ```powershell
 kubectl get pods
@@ -158,6 +158,7 @@ kubectl create configmap cs-grafana-donation-dash --from-file=docker-compose/obs
 kubectl create configmap cs-grafana-zabbix-dash --from-file=docker-compose/observability/grafana/provisioning/dashboards/zabbix.json
 kubectl create configmap cs-grafana-app-logs-dash --from-file=docker-compose/observability/grafana/provisioning/dashboards/cs-app-logs.json
 kubectl create configmap cs-grafana-audit-log-dash --from-file=docker-compose/observability/grafana/provisioning/dashboards/cs-audit-log.json
+kubectl create configmap cs-grafana-alerts-config --from-file=conexao_solidaria_alerts.yaml=docker-compose/observability/grafana/provisioning/alerting/alerts.yaml
 kubectl apply -f k8s/local/services/cs-prometheus.yaml
 kubectl apply -f k8s/local/services/cs-grafana.yaml
  
@@ -211,6 +212,7 @@ kubectl delete configmap cs-grafana-donation-dash
 kubectl delete configmap cs-grafana-zabbix-dash
 kubectl delete configmap cs-grafana-app-logs-dash
 kubectl delete configmap cs-grafana-audit-log-dash
+kubectl delete configmap cs-grafana-alerts-config
 kubectl delete -f k8s/local/services/cs-secrets.yaml
 kubectl delete -f k8s/local/services/cs-services.yaml
 kubectl delete -f k8s/local/services/cs-volumes.yaml
