@@ -2709,54 +2709,16 @@ Todos os dashboards são provisionados automaticamente via ConfigMap no Kubernet
 
 O dashboard de Application Logs funciona como um **sistema de tracing distribuído** — o `CorrelationId` percorre toda a cadeia de processamento de uma requisição e permite reconstruir o trace completo atravessando múltiplos microsserviços:
 
-| Painel | Descrição |
-|---|---|
-| Total de Logs | Contador geral |
-| Information | Contagem por nível |
-| Warning | Contagem por nível |
-| Error | Contagem por nível — alerta visual em vermelho |
-| Logs — Trace Completo | Tabela filtrada por `level`, `caller` e `correlationId`, ordenada cronologicamente |
-| Logs por Caller | Bar chart — volume por classe/microsserviço |
-| Logs por Level | Bar chart — distribuição Information / Warning / Error |
+**Uso como trace:** basta colar um `x-correlation-id` retornado no header de qualquer resposta HTTP no filtro `Correlation ID (Trace)` e o dashboard exibe toda a sequência de logs daquela requisição em ordem cronológica:<br>
 
-**Uso como trace:** basta colar um `x-correlation-id` retornado no header de qualquer resposta HTTP no filtro `Correlation ID (Trace)` e o dashboard exibe toda a sequência de logs daquela requisição em ordem cronológica:
-
-```
-CorrelationId: 3fa85f64-5717-4562-b3fc-2c963f66afa6
-
-Timestamp              Level        Caller                        Message
-2026-06-25T14:00:01Z  Information  LogarUsuarioCommandHandler    Tentativa de login iniciada
-2026-06-25T14:00:01Z  Information  LogarUsuarioCommandHandler    Usuario logado com sucesso
-2026-06-25T14:00:05Z  Information  CriarDoacaoCommandHandler     Iniciando criacao de doacao
-2026-06-25T14:00:05Z  EVENT        MessageService                DonationCreatedEvent publicado
-2026-06-25T14:00:06Z  EVENT        DonationCreatedEventConsumer  Evento recebido
-2026-06-25T14:00:06Z  EVENT        DonationCreatedEventConsumer  Doacao persistida com sucesso
-```
+<img width="2415" height="383" alt="image" src="https://github.com/user-attachments/assets/13d02808-a1c1-4343-a181-87f8e5ca9bf0" />
+<br>
 
 **Audit Log — DynamoDB** ← via DynamoDB-PG Proxy (`cs-audit-log`)
 
-Visualização da trilha de auditoria de todas as operações no banco de dados PostgreSQL, capturadas automaticamente pelo `AuditInterceptor`:
-
-| Painel | Descrição |
-|---|---|
-| Total de Registros | Contador geral de operações auditadas |
-| ADDED | Contagem de inserções — azul |
-| MODIFIED | Contagem de alterações — laranja |
-| DELETED | Contagem de deleções — vermelho |
-| Audit Log | Tabela com `timestamp`, `service`, `operation`, `changed_by`, `resource_id`, `ip_address` — filtrável por serviço e operação |
-| Eventos por Serviço | Bar chart — volume por microsserviço |
-| Eventos por Operação | Bar chart — distribuição ADDED / MODIFIED / DELETED |
-
-**Zabbix Server Health** ← via Zabbix datasource
-
-CPU, memória, disponibilidade do agente, swap, uptime e tráfego de rede do servidor.
-
-#### Alertas
-Configurados os seguintes alertas na observabilidade:
-- Memory exceeding 80%
-- CPU exceeding 50%
-- Disk exceeding 50%
-- Doacoes acima de 3
+Visualização da trilha de auditoria de todas as operações no banco de dados PostgreSQL, capturadas automaticamente pelo `AuditInterceptor`: <br>
+<img width="3147" height="469" alt="image" src="https://github.com/user-attachments/assets/cd56621f-f4c0-4ec1-ae96-6ac7bde30e07" />
+<br>
 
 
 ---
@@ -2769,16 +2731,30 @@ Configurados os seguintes alertas na observabilidade:
 
 Monitora métricas de infraestrutura do servidor onde o Kubernetes está rodando:
 
-- Utilização de CPU e Load Average
-- Utilização de memória RAM e swap
-- Espaço em disco
-- Tráfego de rede
-- Uptime do sistema
-- Disponibilidade do agente Zabbix
+- CPU,
+- memória,
+- carga,
+- disponibilidade de agente,
+- uptime do servidor 
+
+<img width="3098" height="826" alt="image" src="https://github.com/user-attachments/assets/7fcd4bdb-b8bb-4fba-8d81-a07fb11f0185" />
+<br>
 
 Um **Job Kubernetes** (`cs-zabbix-init`) configura automaticamente o host e o dashboard via API JSON-RPC do Zabbix na primeira inicialização — sem configuração manual.
 
 O dashboard do Zabbix é integrado ao Grafana via plugin `alexanderzobnin-zabbix-app`, centralizando toda a observabilidade em uma única interface.
+
+---
+
+#### Alertas
+Configurados os seguintes alertas na observabilidade:
+- Memory exceeding 80%
+- CPU exceeding 50%
+- Disk exceeding 50%
+- Doacoes acima de 3
+
+<img width="3112" height="697" alt="image" src="https://github.com/user-attachments/assets/30204225-88e7-4391-8192-aa939f64b6db" />
+<br>
 
 ---
 
