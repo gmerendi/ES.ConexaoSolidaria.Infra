@@ -392,6 +392,8 @@ kubectl create configmap cs-grafana-donation-dash --from-file=docker-compose/obs
 kubectl create configmap cs-grafana-zabbix-dash --from-file=docker-compose/observability/grafana/provisioning/dashboards/zabbix.json
 kubectl create configmap cs-grafana-app-logs-dash --from-file=docker-compose/observability/grafana/provisioning/dashboards/cs-app-logs.json
 kubectl create configmap cs-grafana-audit-log-dash --from-file=docker-compose/observability/grafana/provisioning/dashboards/cs-audit-log.json
+kubectl create configmap cs-grafana-alerts-config --from-file=conexao_solidaria_alerts.yaml=docker-compose/observability/grafana/provisioning/alerting/alerts.yaml
+
 
 kubectl apply -f k8s/aws/services/cs-aws-credentials.yaml
 kubectl apply -f k8s/aws/services/cs-aws-accounts.yaml
