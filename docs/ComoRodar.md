@@ -356,7 +356,9 @@ Ao término da geração do hardware, ele irá mostrar o que foi criado:<br/>
 O email inserido nesse campo será o e-mail utilizado para os testes de notificação:<br>
 <img width="541" height="275" alt="image" src="https://github.com/user-attachments/assets/115027b0-bef7-4a9f-ab50-7efa8245c5fd" />
 <br>
-Acesse o e-mail configurado e verifique aceite a subscrição proveniente da AWS. Caso esse passo não seja feito, os e-mails de notificação não serão enviados.
+Acesse o e-mail configurado e verifique aceite a subscrição proveniente da AWS. Caso esse passo não seja feito, os e-mails de notificação não serão enviados.<br>
+<img width="1425" height="655" alt="image" src="https://github.com/user-attachments/assets/60becc57-a7a1-48a9-8ed7-e79f70f168c5" />
+
 
 
 #### 3.5) Modifique o arquivo k8s/aws/services/cs-configmap e modifique os dados do AWS:
