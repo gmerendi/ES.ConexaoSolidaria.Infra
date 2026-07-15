@@ -2831,7 +2831,7 @@ A plataforma possui testes unitários nos microsserviços abaixo, que rodam auto
 
 ## GitHub Actions
 
-Os repositórios possuem dois workflows que formam o pipeline completo:
+Os repositórios possuem tr^s workflows que formam o pipeline completo:
 
 ```
 Push/PR → develop
@@ -2842,17 +2842,40 @@ Push → develop
   └─ cd.yml  (CD — Entrega Contínua)
        └─ CI como gate obrigatório
             └─ Build Docker → ECR → Deploy EKS
+Push → develop
+  └─ CodeQL  (Testes de vulnerabilidades)
+       └─ Analyse (actions)
+       └─ Analyze (csharp)
 ```
 
 O CD **não executa** se o CI falhar — o `ci-gate` é um job de pré-requisito explícito em todos os workflows de entrega.
 
 ---
+### CI Build & Test
+
+O código é buildado, são realizados os testes unitários e um teste de vulnerabilidade também é realizado com o trivy. <br>
+<img width="1988" height="1975" alt="image" src="https://github.com/user-attachments/assets/7da3ac0f-4780-48d3-bf58-4bb94b8468d2" />
+
+
+---
+
+### CD Build Push & Deploy
+
+---
+
+### CodeQL
+Os testes abaixo sao realizados : <br>
+
+<img width="1778" height="1832" alt="image" src="https://github.com/user-attachments/assets/869ad4bd-bb5e-4dd7-9fda-d9dfa52dd35b" />
+<br>
+<img width="1747" height="1821" alt="image" src="https://github.com/user-attachments/assets/ac8e4c1d-38f0-42d3-8f2d-aa88cad0c9c0" />
+<br>
 
 ### Workflows por Repositório
 
 | Repositório | CI | CD | Observação |
 |---|---|---|---|
-| `Usuarios` | ✅ Build + Testes | ✅ ECR + EKS | Deploy: `cs-usuarios-api` |
+| `Usuarios` | ✅ Build + Testes + Analise Vulnerabilidades | ✅ ECR + EKS | Deploy: `cs-usuarios-api` |
 | `Campanhas` | ✅ Build + Testes | ✅ ECR + EKS | Deploy: `cs-campanhas-api` |
 | `Worker` | ✅ Build + Testes | ✅ ECR + EKS | Deploy: `cs-donationworker` |
 | `DynamoPgProxy` | ✅ Lint + Sintaxe | ✅ ECR + EKS | Deploy: `cs-dynamo-pg-proxy` |
