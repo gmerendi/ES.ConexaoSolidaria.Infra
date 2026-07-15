@@ -30,7 +30,7 @@ variable "image_version_qty" {
 variable "deploy_apigw" {
   description = "Deploy API Gateway (requer ELBs criados pelo K8s)"
   type        = bool
-  default     = true
+  default     = false
 }
 
 
