@@ -495,6 +495,13 @@ kubectl get pods
 
 ```
 <br>
+O grafana pode ser utilizado na url: <cs-grafana-svc.EXTERNAL-IP>:3000<br><br>
+<img width="1180" height="129" alt="image" src="https://github.com/user-attachments/assets/f3cf8662-ace1-4b93-95db-cf11f489fb23" />
+<br><br>
+<img width="2548" height="949" alt="image" src="https://github.com/user-attachments/assets/6fa9c3c4-a0f0-4280-a1be-82c8cea0e7e2" />
+<br><br>
+
+
 ---
 
 
