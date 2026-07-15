@@ -2851,17 +2851,6 @@ Push → develop
 O CD **não executa** se o CI falhar — o `ci-gate` é um job de pré-requisito explícito em todos os workflows de entrega.
 
 ---
-### CI Build & Test
-
-O código é buildado, são realizados os testes unitários e um teste de vulnerabilidade também é realizado com o trivy. <br>
-<img width="1988" height="1975" alt="image" src="https://github.com/user-attachments/assets/7da3ac0f-4780-48d3-bf58-4bb94b8468d2" />
-
-
----
-
-### CD Build Push & Deploy
-
----
 
 ### CodeQL
 Os testes abaixo sao realizados : <br>
@@ -2876,12 +2865,12 @@ Os testes abaixo sao realizados : <br>
 | Repositório | CI | CD | Observação |
 |---|---|---|---|
 | `Usuarios` | ✅ Build + Testes + Analise Vulnerabilidades | ✅ ECR + EKS | Deploy: `cs-usuarios-api` |
-| `Campanhas` | ✅ Build + Testes | ✅ ECR + EKS | Deploy: `cs-campanhas-api` |
-| `Worker` | ✅ Build + Testes | ✅ ECR + EKS | Deploy: `cs-donationworker` |
-| `DynamoPgProxy` | ✅ Lint + Sintaxe | ✅ ECR + EKS | Deploy: `cs-dynamo-pg-proxy` |
-| `Frontend` | ✅ Build + Publish | ✅ ECR + EKS | Deploy: `cs-frontend` |
-| `ApiGateway` | ✅ Build + Publish | Não publicado para o Cloud |  |
-| `Notificacoes` | ✅ Build + Publish | Não publicado para o Cloud |  |
+| `Campanhas` | ✅ Build + Testes + Analise Vulnerabilidades | ✅ ECR + EKS | Deploy: `cs-campanhas-api` |
+| `Worker` | ✅ Build + Testes + Analise Vulnerabilidades | ✅ ECR + EKS | Deploy: `cs-donationworker` |
+| `DynamoPgProxy` | ✅ Build + Testes + Analise Vulnerabilidades | ✅ ECR + EKS | Deploy: `cs-dynamo-pg-proxy` |
+| `Frontend` | ✅ Build + Testes + Analise Vulnerabilidades | ✅ ECR + EKS | Deploy: `cs-frontend` |
+| `ApiGateway` | ✅ Build + Testes de Vulnerabilidade | Não publicado para o Cloud |  |
+| `Notificacoes` | ✅ Build + Testes de Vulnerabilidade | Não publicado para o Cloud |  |
 
 ---
 
@@ -2889,33 +2878,12 @@ Os testes abaixo sao realizados : <br>
 
 **Gatilhos:** `push` e `pull_request` para `develop` e `main`, além de `workflow_call` (chamado pelo CD como gate).
 
-### Projetos .NET (Usuários, Campanhas, Worker, Frontend)
+### Projetos .NET (Usuários, Campanhas, Worker, Frontend, DynamoPgProxy, Gateway, Notificacoes)
 
-```
-1. Checkout do código
-2. Setup .NET 9.0.x
-3. Cache NuGet → chave baseada no hash dos .csproj (evita downloads repetidos)
-4. dotnet restore
-5. dotnet build --configuration Release
-6. dotnet test --collect:"XPlat Code Coverage"
-7. Upload de artefatos:
-     ├─ test-results.trx  → resultados dos testes
-     └─ coverage.cobertura.xml → cobertura de código
-```
+O código é buildado, são realizados os testes unitários e um teste de vulnerabilidade também é realizado com o trivy. <br>
+<img width="1988" height="1975" alt="image" src="https://github.com/user-attachments/assets/7da3ac0f-4780-48d3-bf58-4bb94b8468d2" />
 
 Os artefatos de cobertura e resultados de testes ficam disponíveis na aba **Actions** do GitHub após cada execução.
-
-### DynamoDB PG Proxy (Python)
-
-Pipeline diferenciado por ser Python:
-
-```
-1. Checkout do código
-2. Setup Python 3.12
-3. pip install -r requirements.txt + flake8
-4. flake8 → lint apenas erros críticos (E9, F63, F7, F82)
-5. python -m py_compile → valida sintaxe do arquivo principal
-```
 
 ---
 
@@ -2931,19 +2899,10 @@ Pipeline diferenciado por ser Python:
      └─ bloqueia o CD se CI falhar
 
 2. build-push-deploy (job) — executa apenas se ci-gate passar
-     ├─ Checkout do repositório da aplicação
-     ├─ Checkout do repositório de Infra (manifests K8s)
-     │    └─ repositório separado: ES.ConexaoSolidaria.Infra
-     │    └─ autenticado via INFRA_REPO_TOKEN (secret)
-     ├─ Configurar credenciais AWS (access key + session token)
-     ├─ Login no Amazon ECR
-     ├─ docker build + docker push
-     │    └─ tag: {github.sha}-{github.run_number}
-     ├─ aws eks update-kubeconfig
-     ├─ kubectl apply -f infra/k8s/aws/services/{manifesto}.yaml
-     ├─ kubectl set image deployment/{nome} {nome}={imagem}
-     └─ kubectl rollout status --timeout=120s
 ```
+
+<img width="2144" height="1968" alt="image" src="https://github.com/user-attachments/assets/3e6fc7e9-5ab0-43d0-a5f6-ed6a97f8aa12" />
+
 
 ### Tag da imagem Docker
 
