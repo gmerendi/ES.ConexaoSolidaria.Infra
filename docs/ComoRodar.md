@@ -372,11 +372,7 @@ Acesse o e-mail configurado e verifique aceite a subscrição proveniente da AWS
 aws eks update-kubeconfig --region us-east-1 --name cs-cluster
 ```
 
-#### 3.7) Rode o Workflow de todos os repositorios de microservicos:
-TODO
-<br><br>
-
-#### 3.8) Fazer deploy dos manifestos Kubernetes
+#### 3.7) Fazer deploy dos manifestos Kubernetes
 Abra um powershell na raiz e digite os comandos abaixo:
 ```powershell
 kubectl create configmap cs-grafana-user-dash --from-file=docker-compose/observability/grafana/provisioning/dashboards/usuarios-api.json
@@ -388,8 +384,6 @@ kubectl create configmap cs-grafana-audit-log-dash --from-file=docker-compose/ob
 kubectl create configmap cs-grafana-alerts-config --from-file=conexao_solidaria_alerts.yaml=docker-compose/observability/grafana/provisioning/alerting/alerts.yaml
 
 
-kubectl apply -f k8s/aws/services/cs-aws-credentials.yaml
-kubectl apply -f k8s/aws/services/cs-aws-accounts.yaml
 kubectl apply -f k8s/aws/services/cs-configmap.yaml
 kubectl apply -f k8s/aws/services/cs-configzabbix.yaml
 kubectl apply -f k8s/aws/services/cs-configobs.yaml
@@ -398,7 +392,6 @@ kubectl apply -f k8s/aws/services/cs-services.yaml
 kubectl apply -f k8s/aws/services/cs-volumes.yaml
 kubectl apply -f k8s/aws/services/cs-elasticsearch.yaml
 kubectl apply -f k8s/aws/services/cs-zabbix.yaml
-kubectl apply -f k8s/aws/services/cs-dynamo-proxy.yaml
 
 ```
 <br><br>
@@ -412,6 +405,12 @@ Obs.: O POD cs-zabbix-init roda apenas na inicialização do zabbix para configu
 <BR>
 <img width="556" height="120" alt="image" src="https://github.com/user-attachments/assets/9a7aebb1-50e5-4f2a-ba16-69a9373f109b" />
 <br><br>
+
+#### 3.8) Rode o Workflow de todos os repositorios de microservicos:
+TODO
+<br><br>
+
+
 
 Dê o deploy dos microserviços: <br>
 ```powershell
