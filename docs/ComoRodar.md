@@ -406,8 +406,17 @@ Obs.: O POD cs-zabbix-init roda apenas na inicialização do zabbix para configu
 <img width="556" height="120" alt="image" src="https://github.com/user-attachments/assets/9a7aebb1-50e5-4f2a-ba16-69a9373f109b" />
 <br><br>
 
-#### 3.8) Rode o Workflow de todos os repositorios de microservicos:
-TODO
+#### 3.8) Rode o Workflow de todos os repositórios de microserviços:
+É necessário rodar apenas o CD.  Como o CD tem como pré-requisito o CI, ambos vao rodar no workflow.<br>
+[cd.yml — ES.ConexaoSolidaria.Usuarios](https://github.com/gmerendi/ES.ConexaoSolidaria.Usuarios/actions/workflows/cd.yml)<br>
+[cd.yml — ES.ConexaoSolidaria.Campanhas](https://github.com/gmerendi/ES.ConexaoSolidaria.Campanhas/actions/workflows/cd.yml)<br>
+[cd.yml — ES.ConexaoSolidaria.Worker](https://github.com/gmerendi/ES.ConexaoSolidaria.Worker/actions/workflows/cd.yml)<br>
+[cd.yml — ES.ConexaoSolidaria.DynamoPgProxy](https://github.com/gmerendi/ES.ConexaoSolidaria.DynamoPgProxy/actions/workflows/cd.yml)<br>
+[cd.yml — ES.ConexaoSolidaria.Frontend](https://github.com/gmerendi/ES.ConexaoSolidaria.Frontend/actions/workflows/cd.yml)<br>
+
+<img width="3685" height="1118" alt="image" src="https://github.com/user-attachments/assets/de4b91a1-01c4-4264-9b03-906b754b48cc" />
+
+
 <br><br>
 
 
