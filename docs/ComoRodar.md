@@ -506,6 +506,7 @@ O grafana pode ser utilizado na url: <cs-grafana-svc.EXTERNAL-IP>:3000<br><br>
 
 
 ## Utilizando a aplicação
+### Local
 Os micro-serviços de usuários e campanhas, não são acessíveis diretamente no browser, por serem internos. Eles são acessíveis via Gateway no endereço:
 ```
 localhost:5006/swagger/index.html
@@ -574,3 +575,7 @@ http://localhost:5000
 ```
 <br>
 <img width="2543" height="991" alt="image" src="https://github.com/user-attachments/assets/81260fc6-009c-4f1e-a068-fd378a761c0e" />
+
+### AWS
+Para utilização no AWS, a página do Swagger não é acessivel.  Os exemplos de comandos podem ser encontrados no documento abaixo:
+- [Comandos Powershell Api Gateway AWS](./ComandosTesteApi.md)
