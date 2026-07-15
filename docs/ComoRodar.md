@@ -422,7 +422,7 @@ O api gateway será criado.<br>
 <img width="696" height="305" alt="image" src="https://github.com/user-attachments/assets/d00a1fc8-01b1-4af7-93d3-b0ed5c2f6065" />
 <br><br>
 
-#### 3.8) Insira a URL do API Gateway no arquivo cs-configmap.yaml
+#### 3.8) Obtenha a URL do API Gateway para ser inserida no arquivo cs-configmap.yaml
 Para descobrir o endereço do API Gateway:<br>
 ```powershell
 $apiId = aws apigatewayv2 get-apis --query "Items[0].ApiId" --output text
@@ -433,8 +433,6 @@ Write-Host "Endpoint: $endpoint"
 ```
 <img width="1106" height="115" alt="image" src="https://github.com/user-attachments/assets/198078aa-fda4-40b6-868b-988f43366ff8" />
 
-<br>
-<img width="2433" height="532" alt="image" src="https://github.com/user-attachments/assets/8dc1160d-9cca-4a82-ae7f-9e55529f5864" />
 <br><br>
 
 
