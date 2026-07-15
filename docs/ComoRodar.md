@@ -471,7 +471,7 @@ kubectl get pods
 
 <br><br>
 
-O Frontend pode ser utilizado na url: <cs-frontend-svc.EXTERNAL-IP>:3000<br><br>
+O Frontend pode ser utilizado na url: <cs-frontend-svc.EXTERNAL-IP>:5000<br><br>
 
 <img width="1171" height="142" alt="image" src="https://github.com/user-attachments/assets/ec8a8a42-5017-46de-b59a-ad851fb89497" />
 <br>
@@ -481,7 +481,7 @@ O Frontend pode ser utilizado na url: <cs-frontend-svc.EXTERNAL-IP>:3000<br><br>
 
 
 <br><br>
-#### 3.12) Efetue o deploy da Observabilidade
+#### 3.11) Efetue o deploy da Observabilidade
 ```powershell
 kubectl apply -f k8s/aws/services/cs-prometheus.yaml
 kubectl apply -f k8s/aws/services/cs-grafana.yaml
