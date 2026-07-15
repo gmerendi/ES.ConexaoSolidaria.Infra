@@ -309,17 +309,7 @@ Insira os dados conforme solicitados.
 <br/>
 <br/>
 
-#### 3.2) Troque os dados de credenciais e sessao no aws-credentials
-Abra o arquivo k8s/aws/services/cs-aws-credentials.yaml e insira os dados da conta também nesse arquivo.
-<img width="374" height="216" alt="image" src="https://github.com/user-attachments/assets/7f5aa05e-0355-4f9e-8a1c-9b5015f10996" />
-<br/>
-<br/>
-
-#### 3.3) Troque o AWSAccountID
-Abra o arquivo k8s/aws/services/cs-aws-accounts.yaml e insira O ID de usuário
-<img width="541" height="164" alt="image" src="https://github.com/user-attachments/assets/59346f63-25c9-4381-98cb-e83e6442dfcb" />
-
-#### 3.4) Troque os dados da conta AWS nos secrets de repositorios
+#### 3.2) Troque os dados da conta AWS nos secrets de repositorios
 - Usuarios
 - Campanhas
 - Worker
@@ -334,7 +324,7 @@ Abra o arquivo k8s/aws/services/cs-aws-accounts.yaml e insira O ID de usuário
 <br/>
 
 
-#### 3.4) Rode o terraform
+#### 3.3) Rode o terraform
 No powershell aberto na pasta infra, digite o comando:
 ```powershell
 .\terraform init
@@ -362,28 +352,28 @@ Ao término da geração do hardware, ele irá mostrar o que foi criado:<br/>
 <br/>
 <br/>
 
-#### 3.5) Verificar o email cadastrado no terraform
+#### 3.4) Verificar o email cadastrado no terraform
 O email inserido nesse campo será o e-mail utilizado para os testes de notificação:<br>
 <img width="541" height="275" alt="image" src="https://github.com/user-attachments/assets/115027b0-bef7-4a9f-ab50-7efa8245c5fd" />
 <br>
 Acesse o e-mail configurado e verifique aceite a subscrição proveniente da AWS. Caso esse passo não seja feito, os e-mails de notificação não serão enviados.
 
 
-#### 3.6) Modifique o arquivo k8s/aws/services/cs-configmap e modifique os dados do AWS:
+#### 3.5) Modifique o arquivo k8s/aws/services/cs-configmap e modifique os dados do AWS:
 <img width="2544" height="793" alt="image" src="https://github.com/user-attachments/assets/c59912b9-613b-4606-a8ea-f5c85c0b2913" />
 
 
 <br><br>
-#### 3.7) Fazer update de contexto do Kubernetes (EKS)
+#### 3.6) Fazer update de contexto do Kubernetes (EKS)
 ```powershell
 aws eks update-kubeconfig --region us-east-1 --name cs-cluster
 ```
 
-#### 3.8) Rode o Workflow de todos os repositorios de microservicos:
+#### 3.7) Rode o Workflow de todos os repositorios de microservicos:
 TODO
 <br><br>
 
-#### 3.9) Fazer deploy dos manifestos Kubernetes
+#### 3.8) Fazer deploy dos manifestos Kubernetes
 Abra um powershell na raiz e digite os comandos abaixo:
 ```powershell
 kubectl create configmap cs-grafana-user-dash --from-file=docker-compose/observability/grafana/provisioning/dashboards/usuarios-api.json
@@ -436,7 +426,7 @@ kubectl get pods
 <img width="533" height="163" alt="image" src="https://github.com/user-attachments/assets/9024b037-cfa4-4fcb-a4cc-85874b0c1148" />
 <br><br>
 
-#### 3.10) Insira os serviços dos microserviços no api gateway
+#### 3.9) Insira os serviços dos microserviços no api gateway
 Abra um powershell na raiz e digite os comandos abaixo:
 ```powershell
 kubectl get svc
@@ -458,7 +448,7 @@ O api gateway será criado.<br>
 <img width="696" height="305" alt="image" src="https://github.com/user-attachments/assets/d00a1fc8-01b1-4af7-93d3-b0ed5c2f6065" />
 <br><br>
 
-#### 3.11) Insira a URL do API Gateway no arquivo cs-configmap.yaml
+#### 3.10) Insira a URL do API Gateway no arquivo cs-configmap.yaml
 Para descobrir o endereço do API Gateway:<br>
 ```powershell
 $apiId = aws apigatewayv2 get-apis --query "Items[0].ApiId" --output text
@@ -473,7 +463,7 @@ Write-Host "Endpoint: $endpoint"
 
 Caso se deseje utilizar os micros-serviços diretamente do API Gateway, os comandos estão no arquivo [ComandosTesteApi.md]
 
-#### 3.12) Efetue o deploy do frontend
+#### 3.11) Efetue o deploy do frontend
 ```powershell
 kubectl apply -f k8s/aws/services/cs-configmap.yaml
 kubectl apply -f k8s/aws/services/cs-frontend.yaml
@@ -486,7 +476,7 @@ O Frontend pode ser utilizado na url: <cs-frontend-svc.EXTERNAL-IP>:3000<br>
 
 
 <br><br>
-#### 3.13) Efetue o deploy da Observabilidade
+#### 3.12) Efetue o deploy da Observabilidade
 ```powershell
 kubectl apply -f k8s/aws/services/cs-prometheus.yaml
 kubectl apply -f k8s/aws/services/cs-grafana.yaml
