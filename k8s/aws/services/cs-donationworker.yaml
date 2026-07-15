@@ -23,7 +23,7 @@ spec:
     spec:
       containers:
         - name: cs-donationworker
-          image: 641008666847.dkr.ecr.us-east-1.amazonaws.com/cs-donationworker-api:latest
+          image: 641008666847.dkr.ecr.us-east-1.amazonaws.com/cs-donationworker-api:${IMAGE_TAG}
           # imagePullPolicy: Never → usa a imagem local buildada pelo docker-compose
           imagePullPolicy: Always
           ports:
@@ -55,44 +55,44 @@ spec:
             - name: Jwt__SecretKey
               valueFrom:
                 secretKeyRef:
-                  name: cs-secrets
+                  name: cs-worker-secrets
                   key: JWT_SECRETKEY
 
             - name: Jwt__Issuer
               valueFrom:
                 secretKeyRef:
-                  name: cs-secrets
+                  name: cs-worker-secrets
                   key: JWT_ISSUER
 
             - name: Jwt__Audience
               valueFrom:
                 secretKeyRef:
-                  name: cs-secrets
+                  name: cs-worker-secrets
                   key: JWT_AUDIENCE
 
             - name: Jwt__ExpirationHours
               valueFrom:
                 secretKeyRef:
-                  name: cs-secrets
+                  name: cs-worker-secrets
                   key: JWT_EXPIRATION_HOURS
 
             - name: AES__KEY
               valueFrom:
                 secretKeyRef:
-                  name: cs-secrets
+                  name: cs-worker-secrets
                   key: AES_KEY
 
             #Rabbitmq
             - name: RabbitMq__Password
               valueFrom:
                 secretKeyRef:
-                  name: cs-secrets
+                  name: cs-worker-secrets
                   key: RABBITMQ_PASSWORD
 
             - name: RabbitMq__Username
               valueFrom:
                 secretKeyRef:
-                  name: cs-secrets
+                  name: cs-worker-secrets
                   key: RABBITMQ_USERNAME
 
             - name: RabbitMq__Host
@@ -127,12 +127,12 @@ spec:
             - name: CAMPANHAS_DB_PASS
               valueFrom:
                 secretKeyRef:
-                  name: cs-secrets
+                  name: cs-worker-secrets
                   key: CAMPANHAS_POSTGRES_PASSWORD
             - name: CAMPANHAS_DB_USER
               valueFrom:
                 secretKeyRef:
-                  name: cs-secrets
+                  name: cs-worker-secrets
                   key: CAMPANHAS_POSTGRES_USER
             - name: DYNAMODB_SERVICE_URL
               valueFrom:
