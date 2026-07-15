@@ -420,15 +420,9 @@ Obs.: O POD cs-zabbix-init roda apenas na inicialização do zabbix para configu
 <br><br>
 
 
+Os workflows vão dar deploy automatico nos serviços.<br>
 
-Dê o deploy dos microserviços: <br>
-```powershell
-kubectl apply -f k8s/aws/services/cs-usuarios.yaml
-kubectl apply -f k8s/aws/services/cs-campanhas.yaml
-kubectl apply -f k8s/aws/services/cs-donationworker.yaml
-
-```
-Aguarde os pods acima ficarem prontos:<br>
+Aguarde os pods ficarem prontos:<br>
 Teste com o comando:
 ```powershell
 kubectl get pods
