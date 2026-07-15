@@ -467,19 +467,15 @@ Teste com o comando:
 kubectl get pods
 ```
 <br>
-<img width="533" height="163" alt="image" src="https://github.com/user-attachments/assets/9024b037-cfa4-4fcb-a4cc-85874b0c1148" />
+<img width="539" height="166" alt="image" src="https://github.com/user-attachments/assets/cbd922b4-dd0e-42c4-b379-6234378e5530" />
+
 <br><br>
 
+O Frontend pode ser utilizado na url: <cs-frontend-svc.EXTERNAL-IP>:3000<br><br>
 
-
-#### 3.11) Efetue o deploy do frontend
-```powershell
-kubectl apply -f k8s/aws/services/cs-configmap.yaml
-kubectl apply -f k8s/aws/services/cs-frontend.yaml
-```
+<img width="1171" height="142" alt="image" src="https://github.com/user-attachments/assets/ec8a8a42-5017-46de-b59a-ad851fb89497" />
 <br>
 
-O Frontend pode ser utilizado na url: <cs-frontend-svc.EXTERNAL-IP>:3000<br>
 <img width="2551" height="976" alt="image" src="https://github.com/user-attachments/assets/79a2af51-e3b4-454e-8502-b5b60cbd89b6" />
 <br><br>
 
