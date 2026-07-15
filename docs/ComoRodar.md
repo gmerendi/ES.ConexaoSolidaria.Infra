@@ -360,19 +360,13 @@ Acesse o e-mail configurado e verifique aceite a subscrição proveniente da AWS
 <img width="1425" height="655" alt="image" src="https://github.com/user-attachments/assets/60becc57-a7a1-48a9-8ed7-e79f70f168c5" />
 
 
-
-#### 3.5) Modifique o arquivo k8s/aws/services/cs-configmap e modifique os dados abaixo com os endereços do AWS:
-<img width="875" height="501" alt="image" src="https://github.com/user-attachments/assets/dc4ef39e-71ba-4ff2-a540-f8be861bfbd5" />
-
-
-
 <br><br>
-#### 3.6) Fazer update de contexto do Kubernetes (EKS)
+#### 3.5) Fazer update de contexto do Kubernetes (EKS)
 ```powershell
 aws eks update-kubeconfig --region us-east-1 --name cs-cluster
 ```
 
-#### 3.7) Fazer deploy dos manifestos Kubernetes
+#### 3.6) Fazer deploy dos manifestos Kubernetes
 Abra um powershell na raiz e digite os comandos abaixo:
 ```powershell
 kubectl create configmap cs-grafana-user-dash --from-file=docker-compose/observability/grafana/provisioning/dashboards/usuarios-api.json
@@ -406,6 +400,45 @@ Obs.: O POD cs-zabbix-init roda apenas na inicialização do zabbix para configu
 <img width="556" height="120" alt="image" src="https://github.com/user-attachments/assets/9a7aebb1-50e5-4f2a-ba16-69a9373f109b" />
 <br><br>
 
+#### 3.7) Insira os serviços dos microserviços no api gateway
+Abra um powershell na raiz e digite os comandos abaixo:
+```powershell
+kubectl get svc
+
+```
+<br><br>
+Copie os endereços dos micro-serviçoes de campanhas,  usuários e frontend no arquivo variables.tf na raiz da pasta terraform e passe a variável deploy_apigw para true: <br>
+<img width="2437" height="933" alt="image" src="https://github.com/user-attachments/assets/eae88048-0e0b-4df1-8f47-75cbbb9fdd07" />
+
+
+
+<br><br>
+Faça o terraform apply novamente , abrindo um powershell na pasta terraform:<br>
+```powershell
+.\terraform apply
+```
+<br>
+O api gateway será criado.<br>
+<img width="696" height="305" alt="image" src="https://github.com/user-attachments/assets/d00a1fc8-01b1-4af7-93d3-b0ed5c2f6065" />
+<br><br>
+
+#### 3.8) Insira a URL do API Gateway no arquivo cs-configmap.yaml
+Para descobrir o endereço do API Gateway:<br>
+```powershell
+$apiId = aws apigatewayv2 get-apis --query "Items[0].ApiId" --output text
+$stage = aws apigatewayv2 get-stages --api-id $apiId --query "Items[0].StageName" --output text
+$endpoint = "https://$apiId.execute-api.us-east-1.amazonaws.com/$stage"
+Write-Host "Endpoint: $endpoint"
+
+```
+<br>
+<img width="2433" height="532" alt="image" src="https://github.com/user-attachments/assets/8dc1160d-9cca-4a82-ae7f-9e55529f5864" />
+<br><br>
+
+Caso se deseje utilizar os micros-serviços diretamente do API Gateway, os comandos estão no arquivo [ComandosTesteApi.md]
+#### 3.5) Modifique o arquivo k8s/aws/services/cs-configmap e modifique os dados abaixo com os endereços do AWS:
+<img width="875" height="501" alt="image" src="https://github.com/user-attachments/assets/dc4ef39e-71ba-4ff2-a540-f8be861bfbd5" />
+
 #### 3.8) Rode o Workflow de todos os repositórios de microserviços:
 É necessário rodar apenas o CD.  Como o CD tem como pré-requisito o CI, ambos vao rodar no workflow.<br>
 [cd.yml — ES.ConexaoSolidaria.Usuarios](https://github.com/gmerendi/ES.ConexaoSolidaria.Usuarios/actions/workflows/cd.yml)<br>
@@ -431,42 +464,7 @@ kubectl get pods
 <img width="533" height="163" alt="image" src="https://github.com/user-attachments/assets/9024b037-cfa4-4fcb-a4cc-85874b0c1148" />
 <br><br>
 
-#### 3.9) Insira os serviços dos microserviços no api gateway
-Abra um powershell na raiz e digite os comandos abaixo:
-```powershell
-kubectl get svc
 
-```
-<br><br>
-Copie os endereços dos micro-serviçoes de campanhas,  usuários e frontend no arquivo variables.tf na raiz da pasta terraform e passe a variável deploy_apigw para true: <br>
-<img width="2437" height="933" alt="image" src="https://github.com/user-attachments/assets/eae88048-0e0b-4df1-8f47-75cbbb9fdd07" />
-
-
-
-<br><br>
-Faça o terraform apply novamente , abrindo um powershell na pasta terraform:<br>
-```powershell
-.\terraform apply
-```
-<br>
-O api gateway será criado.<br>
-<img width="696" height="305" alt="image" src="https://github.com/user-attachments/assets/d00a1fc8-01b1-4af7-93d3-b0ed5c2f6065" />
-<br><br>
-
-#### 3.10) Insira a URL do API Gateway no arquivo cs-configmap.yaml
-Para descobrir o endereço do API Gateway:<br>
-```powershell
-$apiId = aws apigatewayv2 get-apis --query "Items[0].ApiId" --output text
-$stage = aws apigatewayv2 get-stages --api-id $apiId --query "Items[0].StageName" --output text
-$endpoint = "https://$apiId.execute-api.us-east-1.amazonaws.com/$stage"
-Write-Host "Endpoint: $endpoint"
-
-```
-<br>
-<img width="2433" height="532" alt="image" src="https://github.com/user-attachments/assets/8dc1160d-9cca-4a82-ae7f-9e55529f5864" />
-<br><br>
-
-Caso se deseje utilizar os micros-serviços diretamente do API Gateway, os comandos estão no arquivo [ComandosTesteApi.md]
 
 #### 3.11) Efetue o deploy do frontend
 ```powershell
