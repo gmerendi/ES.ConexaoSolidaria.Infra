@@ -319,6 +319,17 @@ Abra o arquivo k8s/aws/services/cs-aws-credentials.yaml e insira os dados da con
 Abra o arquivo k8s/aws/services/cs-aws-accounts.yaml e insira O ID de usuário
 <img width="541" height="164" alt="image" src="https://github.com/user-attachments/assets/59346f63-25c9-4381-98cb-e83e6442dfcb" />
 
+#### 3.4) Troque os dados da conta AWS nos secrets de repositorios
+- Usuarios
+- Campanhas
+- Worker
+- DynamoPgProxy
+- Frontend
+<BR>
+<img width="3374" height="1968" alt="image" src="https://github.com/user-attachments/assets/ca7023ea-4131-44ff-8318-fa80fe5d7569" />
+
+
+
 <br/>
 <br/>
 
