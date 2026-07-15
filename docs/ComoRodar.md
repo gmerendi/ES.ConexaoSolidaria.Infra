@@ -488,7 +488,8 @@ kubectl apply -f k8s/aws/services/cs-grafana.yaml
 
 ```
 
-Aguarde até que os pods estejam rodando
+Aguarde até que os pods estejam rodando<br>
+
 ```powershell
 kubectl get pods
 
