@@ -361,8 +361,9 @@ Acesse o e-mail configurado e verifique aceite a subscrição proveniente da AWS
 
 
 
-#### 3.5) Modifique o arquivo k8s/aws/services/cs-configmap e modifique os dados do AWS:
-<img width="2544" height="793" alt="image" src="https://github.com/user-attachments/assets/c59912b9-613b-4606-a8ea-f5c85c0b2913" />
+#### 3.5) Modifique o arquivo k8s/aws/services/cs-configmap e modifique os dados abaixo com os endereços do AWS:
+<img width="875" height="501" alt="image" src="https://github.com/user-attachments/assets/dc4ef39e-71ba-4ff2-a540-f8be861bfbd5" />
+
 
 
 <br><br>
