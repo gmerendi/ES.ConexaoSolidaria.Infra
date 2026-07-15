@@ -96,6 +96,11 @@ spec:
               mountPath: /var/lib/grafana/dashboards/cs-audit-log.json
               subPath: cs-audit-log.json
 
+            # Injeta o arquivo de alertas provisionados
+            - name: provisioning-alerts-volume
+              mountPath: /etc/grafana/provisioning/alerting/alerts.yaml
+              subPath: alerts.yaml
+
       # ── Declaração dos Volumes do Cluster ──────────────────────────────────
       volumes:
         # Puxa os arquivos estruturais (Datasource e Provider) 
@@ -135,3 +140,10 @@ spec:
         - name: audit-log-dash-volume
           configMap:
             name: cs-grafana-audit-log-dash
+
+        - name: provisioning-alerts-volume
+          configMap:
+            name: cs-grafana-alerts-config
+            items:
+              - key: conexao_solidaria_alerts.yaml
+                path: alerts.yaml
