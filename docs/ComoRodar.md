@@ -485,6 +485,13 @@ O Frontend pode ser utilizado na url: <cs-frontend-svc.EXTERNAL-IP>:5000<br><br>
 ```powershell
 kubectl apply -f k8s/aws/services/cs-prometheus.yaml
 kubectl apply -f k8s/aws/services/cs-grafana.yaml
+
+```
+
+Aguarde até que os pods estejam rodando
+```powershell
+kubectl get pods
+
 ```
 <br>
 ---
