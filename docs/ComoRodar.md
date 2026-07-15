@@ -437,9 +437,14 @@ Write-Host "Endpoint: $endpoint"
 <img width="2433" height="532" alt="image" src="https://github.com/user-attachments/assets/8dc1160d-9cca-4a82-ae7f-9e55529f5864" />
 <br><br>
 
-Caso se deseje utilizar os micros-serviços diretamente do API Gateway, os comandos estão no arquivo [ComandosTesteApi.md]
+
 #### 3.9) Modifique o arquivo k8s/aws/services/cs-configmap e modifique os dados abaixo com os endereços do AWS:
 <img width="875" height="501" alt="image" src="https://github.com/user-attachments/assets/dc4ef39e-71ba-4ff2-a540-f8be861bfbd5" />
+<br>
+Efetue o deploy do configmap novamente
+```powershell
+kubectl apply -f k8s/aws/services/cs-configmap.yaml
+```
 
 #### 3.10) Rode o Workflow de todos os repositórios de microserviços:
 É necessário rodar apenas o CD.  Como o CD tem como pré-requisito o CI, ambos vao rodar no workflow.<br>
