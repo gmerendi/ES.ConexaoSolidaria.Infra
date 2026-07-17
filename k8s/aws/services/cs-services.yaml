@@ -131,7 +131,7 @@ metadata:
     app: cs-zabbix
     project: conexao-solidaria
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
     app: cs-zabbix
   ports:
