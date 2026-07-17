@@ -58,6 +58,7 @@ C:\FIAP\ <br>
 <img width="3390" height="2395" alt="image" src="https://github.com/user-attachments/assets/1587d1ff-2d80-42c7-a39a-f22836c12c6e" />
 
 ### Cloud AWS
+<img width="3366" height="2386" alt="image" src="https://github.com/user-attachments/assets/8fcc0a53-8ba8-4f1b-b4f8-b560e4da2bed" />
 
 
 ---
