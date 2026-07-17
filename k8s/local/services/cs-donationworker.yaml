@@ -6,7 +6,6 @@ metadata:
     app: cs-donationworker
     project: conexao-solidaria
 spec:
-  replicas: 1
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -209,11 +208,11 @@ spec:
           # ── Recursos ────────────────────────────────────────────────────
           resources:
             requests:
-              cpu: "250m"
-              memory: "256Mi"
+              cpu: "100m"
+              memory: "100Mi"
             limits:
-              cpu: "500m"
-              memory: "512Mi"
+              cpu: "200m"
+              memory: "200Mi"
 
           # ── Liveness Probe ───────────────────────────────────────────────
           # Se falhar: Kubernetes reinicia o container
@@ -236,3 +235,42 @@ spec:
             timeoutSeconds: 5
             failureThreshold: 3
             successThreshold: 1
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: cs-donationworker-hpa
+  labels:
+    app: cs-donationworker
+    project: conexao-solidaria
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: cs-donationworker 
+  minReplicas: 1
+  maxReplicas: 5
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 60
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 15  
+      policies:
+        - type: Pods
+          value: 2
+          periodSeconds: 15
+    scaleDown:
+      stabilizationWindowSeconds: 60   # desce devagar, evita flapping
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 30
+
+
+
