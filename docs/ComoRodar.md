@@ -1,9 +1,9 @@
 # Como rodar o projeto
 
 Existem 3 maneiras de rodar o projeto: <br>
-- Docker-compose : Cria containers no docker desktop, não gerenciados. Essa é a forma mais simples, com apenas 1 comando.
-- Kubernetes local: Cria os deployments kubernetes localmente, utilizando a instalação kubernetes monitorada no docker desktop.
-- AWS Cloud: Cria os deployments kubernetes no cloud AWS, utilizando serviços no cloud como alternativa para os serviços locais.  Requer criação prévia da Infra no AWS.
+- Docker-compose : Cria containers no docker desktop, não gerenciados. Essa é a forma mais simples, com apenas 1 comando, ideal para desenvolvimento.
+- Kubernetes local: Cria os deployments kubernetes localmente, utilizando a instalação kubernetes monitorada no docker desktop. Ideal para testar a aplicação final em ambiente local
+- AWS Cloud: Cria os deployments kubernetes no cloud AWS, utilizando serviços no cloud como alternativa para os serviços locais.  Requer criação prévia da Infra no AWS. Ideal para a publicação da aplicação de forma pública em produção.
 
 Inicialmente, todos os projetos precisam ser clonados, respeitando a hierarquia de pastas abaixo: <br>
 C:\FIAP\ <br>
