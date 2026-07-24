@@ -72,8 +72,7 @@ Um usuario gestor é criado no deployment da aplicação.  O primeiro passo é c
 
 2. Gestor da ONG cria uma campanha, exige perfil GESTOR_ONG. Regras de domínio validadas na entidade (não no controller): data de término não pode estar no passado, meta financeira maior que zero. Persistido no PostgreSQL do microsserviço Campanhas;
 
-### Criar Usuário
-
+### Realizar Doação
 1. Usuário acessa a aplicação Navegador carrega o app Blazor WebAssembly via cs-frontend-svc (Kubernetes Service tipo LoadBalancer, porta 5000→80). A partir daqui, todas as chamadas de dados são feitas pelo próprio navegador, direto ao Gateway — o pod do Frontend só serve os arquivos estáticos.
 
 2. Usuário cria seu cadastro (perfil Doador default). Nome, e-mail (único) e CPF (validado e criptografado com AES-256) são persistidos no PostgreSQL; a senha é armazenada com hash BCrypt. Endpoint público, sem autenticação. Um evento UserCreatedEvent é publicado (no RabbitMq se Local, SQS se AWS).
