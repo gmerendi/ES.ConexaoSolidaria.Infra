@@ -13,6 +13,7 @@ Responsável por:
 ## Sumário
 - [Repositorios do Projeto](#repositorios-do-projeto)
 - [Arquitetura](#arquitetura)
+- [Fluxo de Uso](#fluxo-de-uso)
 - [Stack Tecnológica](#stack-tecnologica)
 - [Endpoints](#endpoints)
 - [Features](#features)
@@ -61,6 +62,39 @@ C:\FIAP\ <br>
 ### Cloud AWS
 <img width="3366" height="2386" alt="image" src="https://github.com/user-attachments/assets/8fcc0a53-8ba8-4f1b-b4f8-b560e4da2bed" />
 
+
+---
+## Fluxo de Uso
+
+### Criar Campanha
+Um usuario gestor é criado no deployment da aplicação.  O primeiro passo é criar uma campanha. <br><br>
+1. Gestor da ONG efetua login. Microsserviço Usuários valida credenciais contra o PostgreSQL e emite um token JWT. O perfil (DOADOR ou GESTOR_ONG) vai embutido no token e é revalidado em cada chamada protegida, tanto no Gateway quanto em cada microsserviço (defesa em profundidade).
+
+2. Gestor da ONG cria uma campanha, exige perfil GESTOR_ONG. Regras de domínio validadas na entidade (não no controller): data de término não pode estar no passado, meta financeira maior que zero. Persistido no PostgreSQL do microsserviço Campanhas;
+
+### Criar Usuário
+
+1. Usuário acessa a aplicação Navegador carrega o app Blazor WebAssembly via cs-frontend-svc (Kubernetes Service tipo LoadBalancer, porta 5000→80). A partir daqui, todas as chamadas de dados são feitas pelo próprio navegador, direto ao Gateway — o pod do Frontend só serve os arquivos estáticos.
+
+2. Usuário cria seu cadastro (perfil Doador default). Nome, e-mail (único) e CPF (validado e criptografado com AES-256) são persistidos no PostgreSQL; a senha é armazenada com hash BCrypt. Endpoint público, sem autenticação. Um evento UserCreatedEvent é publicado (no RabbitMq se Local, SQS se AWS).
+   
+3. O evento UserCreatedEvent é consumido pelo microsserviço Notificacoes se Local ou Lambda se AWS e um e-mail é disparado para o usuário, notificando a criação do usuário.
+
+4. Usuário efetua login. Microsserviço Usuários valida credenciais contra o PostgreSQL e emite um token JWT. O perfil (DOADOR ou GESTOR_ONG) vai embutido no token e é revalidado em cada chamada protegida, tanto no Gateway quanto em cada microsserviço (defesa em profundidade).
+
+5. Qualquer visitante consulta o painel de transparência - endpoint público, sem autenticação. Lista apenas campanhas com status ATIVA, com meta e valor arrecadado atual. Resultado cacheado no Redis (TTL configurável) pra reduzir carga no Postgres, com validade de 60 segundos, configuravel via environment. No Microsserviço Frontend, clica em "Doar".
+
+6. Usuario autenticado envia uma doação. A API valida que a campanha está ATIVA e não grava o valor arrecadado diretamente — publica um evento DonationCreatedEvent (RabbitMQ local / SQS+MassTransit no ambiente AWS) e retorna, sem esperar o processamento.
+
+8. Worker de Doações processa o evento, de forma assíncrona O microsserviço DonationWorker (pod separado, escala independente dos demais) consome o evento, verifica idempotência pelo CorrelationId, e atualiza — numa única transação atômica no PostgreSQL — o valor arrecadado da campanha e o registro da doação.
+
+9. Doador recebe confirmação com recibo Ao concluir, o Worker publica DonationProcessedEvent. O microsserviço Notificações consome esse evento e envia e-mail via SMTP (Mailtrap, local) com um recibo em PDF anexado gerado na hora — nome, campanha, valor e um número de protocolo (o próprio CorrelationId, garantindo rastreabilidade). No ambiente AWS, o mesmo papel é feito por uma Lambda acionada via SQS, usando a API HTTP do Mailtrap.
+
+10. Painel de transparência reflete o novo valor na expiração do Cache (60s default). Nova consulta ao endpoint do passo 5 já retorna o valor atualizado — prova de ponta a ponta do fluxo assíncrono, sem que o doador precise fazer nada além de enviar a doação.
+
+11. Sistema escala automaticamente sob carga Se o volume de doações sobe, o HorizontalPodAutoscaler do DonationWorker aumenta o número de réplicas com base em uso de CPU — sem intervenção manual, e sem risco de duplicar valores, graças à idempotência do passo 8.
+
+12. Toda a operação é observável em tempo real Prometheus coleta métricas de cada serviço (/metrics); Zabbix monitora saúde de infraestrutura (CPU/memória/rede dos pods); um serviço próprio, DynamoPgProxy, expõe os logs de auditoria gravados no DynamoDB (via interceptor do EF Core, capturando o diff de toda alteração de entidade) como fonte de dados no formato que o Grafana entende. Os três alimentam dashboards únicos no Grafana.
 
 ---
 
