@@ -589,3 +589,4 @@ http://localhost:5000
 ### AWS
 Para utilização no AWS, a página do Swagger não é acessivel.  Os exemplos de comandos podem ser encontrados no documento abaixo:
 - [Comandos Powershell Api Gateway AWS](./ComandosTesteApi.md)
+- O frontend funciona igualmente quando rodando local ou no aws.
