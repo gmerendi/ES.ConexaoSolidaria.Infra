@@ -327,7 +327,7 @@ $response | ConvertTo-Json -Depth 10
 ```
 ---
 
-## 7. Cancelar campanha
+## 7. Realizar doações
 ```powershell
 ## 8. Realizar doacoes
 $guidCampanha = "45cd71e8-a3b1-47e0-8894-8ec70de37cf0"
