@@ -322,7 +322,18 @@ Insira os dados conforme solicitados.
 
 <br/>
 <br/>
+#### 3.3) Modifique o repositório dos arquivos kubernetes dos microsserviços 
+No repositório de Infra, modifique o ID dos deployments abaixo para refletir a conta AWS:<br>
+- cs-campanhas.yaml
+- cs-donationworker.yaml
+- cs-usuarios.yaml
+- cs-frontend.yaml
+- cs-dynamo-pg-proxy.yaml
 
+<img width="873" height="580" alt="image" src="https://github.com/user-attachments/assets/67ef30cd-bbcc-45b2-a4b9-5c908ab6661c" />
+
+<br/>
+<br/>
 
 #### 3.3) Rode o terraform
 No powershell aberto na pasta infra, digite o comando:
