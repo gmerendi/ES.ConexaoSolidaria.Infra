@@ -24,7 +24,7 @@ data:
   CAMPANHAS_POSTGRES_DB: "cs-campanhas"
 
   #Gateway
-  GATEWAY_URL: "https://9airujgcjj.execute-api.us-east-1.amazonaws.com/Production/"
+  GATEWAY_URL: "https://ol62wbq841.execute-api.us-east-1.amazonaws.com/Production/"
 
   #DynamoDB
   DYNAMODB_SERVICE_URL: "https://dynamodb.us-east-1.amazonaws.com"
