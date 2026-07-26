@@ -23,7 +23,7 @@ spec:
     spec:
       containers:
         - name: cs-campanhas-api
-          image: 641008666847.dkr.ecr.us-east-1.amazonaws.com/cs-campanhas-api:${IMAGE_TAG}
+          image: 357177055772.dkr.ecr.us-east-1.amazonaws.com/cs-campanhas-api:${IMAGE_TAG}
           # imagePullPolicy: Never → usa a imagem local buildada pelo docker-compose
           imagePullPolicy: Always
           ports:
