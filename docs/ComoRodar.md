@@ -432,7 +432,7 @@ O api gateway será criado.<br>
 <img width="696" height="305" alt="image" src="https://github.com/user-attachments/assets/d00a1fc8-01b1-4af7-93d3-b0ed5c2f6065" />
 <br><br>
 
-#### 3.8) Obtenha a URL do API Gateway para ser inserida no arquivo cs-configmap.yaml
+#### 3.8) Obtenha a URL do API Gateway, RDS e Redis para ser inserida no arquivo cs-configmap.yaml
 Para descobrir o endereço do API Gateway:<br>
 ```powershell
 $apiId = aws apigatewayv2 get-apis --query "Items[0].ApiId" --output text
@@ -441,6 +441,18 @@ $endpoint = "https://$apiId.execute-api.us-east-1.amazonaws.com/$stage"
 Write-Host "Endpoint: $endpoint"
 
 ```
+
+Para descobrir o endereço do RDS:<br>
+```powershell
+aws rds describe-db-instances --db-instance-identifier cs-postgres-db --query "DBInstances[0].Endpoint.[Address,Port]" --output text
+```
+
+Para descobrir o endereço do Redis:<br>
+```powershell
+ aws elasticache describe-cache-clusters --show-cache-node-info --query "CacheClusters[*].[CacheClusterId, CacheNodes[0].Endpoint.Address, CacheNodes[0].Endpoint.Port]" --output table
+```
+
+Para descobrir o endereco do 
 <img width="1106" height="115" alt="image" src="https://github.com/user-attachments/assets/198078aa-fda4-40b6-868b-988f43366ff8" />
 
 <br><br>
