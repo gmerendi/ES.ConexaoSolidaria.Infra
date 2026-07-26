@@ -252,7 +252,7 @@ Write-Host "Guid da campanha: $guidCampanha"
 ```
 ---
 
-## 2. Visualizar dados de uma campanha$guidCampanha = "5d3a0398-ac91-4ae0-93c7-2c5f5e39e852"
+## 2. Visualizar dados de uma campanha
 ```powershell
 #$guidCampanha = "5d3a0398-ac91-4ae0-93c7-2c5f5e39e852"
 
