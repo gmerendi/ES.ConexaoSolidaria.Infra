@@ -392,7 +392,6 @@ kubectl create configmap cs-grafana-alerts-config --from-file=conexao_solidaria_
 kubectl apply -f k8s/aws/services/cs-configmap.yaml
 kubectl apply -f k8s/aws/services/cs-configzabbix.yaml
 kubectl apply -f k8s/aws/services/cs-configobs.yaml
-kubectl apply -f k8s/aws/services/cs-secrets.yaml
 kubectl apply -f k8s/aws/services/cs-services.yaml
 kubectl apply -f k8s/aws/services/cs-volumes.yaml
 kubectl apply -f k8s/aws/services/cs-elasticsearch.yaml
